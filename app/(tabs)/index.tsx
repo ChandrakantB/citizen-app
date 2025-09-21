@@ -3,8 +3,11 @@ import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Alert, Image, P
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function HomeScreen() {
+  const { theme, isDark } = useTheme();
+  const styles = createStyles(theme);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const takePhoto = async () => {
@@ -73,7 +76,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? "light" : "dark"} />
       
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         {/* Header */}
@@ -85,7 +88,7 @@ export default function HomeScreen() {
         {/* Main Content */}
         <View style={styles.content}>
           <View style={styles.welcomeCard}>
-            <Ionicons name="leaf" size={48} color="#22c55e" />
+            <Ionicons name="leaf" size={48} color={theme.success} />
             <Text style={styles.welcomeText}>Welcome to Bin2Win</Text>
             <Text style={styles.description}>
               Join the revolution of smart waste management and earn rewards
@@ -110,17 +113,17 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="location" size={24} color="#2563eb" />
+              <Ionicons name="location" size={24} color={theme.primary} />
               <Text style={styles.actionText}>Find Nearest Bin</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="time" size={24} color="#2563eb" />
+              <Ionicons name="time" size={24} color={theme.primary} />
               <Text style={styles.actionText}>Track Report Status</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="trophy" size={24} color="#f59e0b" />
+              <Ionicons name="trophy" size={24} color={theme.warning} />
               <Text style={styles.actionText}>View Rewards</Text>
             </TouchableOpacity>
           </View>
@@ -153,10 +156,10 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.background,
   },
   scrollView: {
     flex: 1,
@@ -165,7 +168,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 20,
     paddingBottom: 30,
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.header,
   },
   appTitle: {
     fontSize: 32,
@@ -182,14 +185,14 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 30,
-    paddingBottom: 100, // Extra padding for tab bar
+    paddingBottom: 100,
   },
   welcomeCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.card,
     borderRadius: 16,
     padding: 30,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -199,23 +202,23 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#1f2937',
+    color: theme.text,
     marginTop: 15,
     textAlign: 'center',
   },
   description: {
     fontSize: 16,
-    color: '#6b7280',
+    color: theme.textSecondary,
     textAlign: 'center',
     marginTop: 10,
     lineHeight: 22,
   },
   photoPreview: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.card,
     borderRadius: 16,
     padding: 15,
     marginBottom: 30,
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -224,7 +227,7 @@ const styles = StyleSheet.create({
   photoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: theme.text,
     marginBottom: 10,
   },
   previewImage: {
@@ -235,7 +238,7 @@ const styles = StyleSheet.create({
   reportStatus: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#22c55e',
+    color: theme.success,
     marginTop: 10,
     textAlign: 'center',
   },
@@ -245,18 +248,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1f2937',
+    color: theme.text,
     marginBottom: 20,
   },
   reportButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#dc2626',
+    backgroundColor: theme.error,
     padding: 20,
     borderRadius: 16,
     marginBottom: 15,
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -272,11 +275,11 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.card,
     padding: 20,
     borderRadius: 12,
     marginBottom: 15,
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -285,7 +288,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 18,
     fontWeight: '500',
-    color: '#1f2937',
+    color: theme.text,
     marginLeft: 15,
   },
   statsSection: {
@@ -297,11 +300,11 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.card,
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -310,23 +313,23 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2563eb',
+    color: theme.primary,
     marginBottom: 5,
   },
   statLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.textSecondary,
     textAlign: 'center',
   },
   webNotice: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: theme.warning + '30',
     padding: 15,
     borderRadius: 12,
     marginTop: 10,
   },
   webNoticeText: {
     fontSize: 14,
-    color: '#92400e',
+    color: theme.text,
     textAlign: 'center',
   },
 });

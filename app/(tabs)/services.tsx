@@ -2,8 +2,12 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function ServicesScreen() {
+  const { theme, isDark } = useTheme();
+  const styles = createStyles(theme);
+
   const handleServiceRequest = (serviceType: string) => {
     Alert.alert(
       `${serviceType} Request`,
@@ -20,14 +24,14 @@ export default function ServicesScreen() {
     { 
       name: 'Medical Waste', 
       icon: 'medical', 
-      color: '#dc2626', 
+      color: theme.error, 
       description: 'Safe disposal of syringes, medicines, bandages',
       price: 'Starting ₹200'
     },
     { 
       name: 'Construction Debris', 
       icon: 'construct', 
-      color: '#f59e0b', 
+      color: theme.warning, 
       description: 'Concrete, bricks, tiles, construction materials',
       price: 'Starting ₹500'
     },
@@ -41,28 +45,28 @@ export default function ServicesScreen() {
     { 
       name: 'Electronic Waste', 
       icon: 'phone-portrait', 
-      color: '#3b82f6', 
+      color: theme.primary, 
       description: 'Phones, computers, batteries, appliances',
       price: 'Starting ₹150'
     },
     { 
       name: 'Garden Waste', 
       icon: 'leaf', 
-      color: '#22c55e', 
+      color: theme.success, 
       description: 'Branches, leaves, grass, organic waste',
       price: 'Starting ₹100'
     },
     { 
       name: 'Hazardous Waste', 
       icon: 'warning', 
-      color: '#ef4444', 
+      color: theme.error, 
       description: 'Chemicals, paints, oils, dangerous materials',
       price: 'Quote based'
     },
     { 
       name: 'Bulk Waste', 
       icon: 'cube', 
-      color: '#6b7280', 
+      color: theme.textSecondary, 
       description: 'Large items, appliances, heavy materials',
       price: 'Starting ₹400'
     },
@@ -77,7 +81,7 @@ export default function ServicesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? "light" : "dark"} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
@@ -127,7 +131,7 @@ export default function ServicesScreen() {
           <View style={styles.contactSection}>
             <Text style={styles.sectionTitle}>Need Help?</Text>
             <TouchableOpacity style={styles.contactCard}>
-              <Ionicons name="call" size={24} color="#22c55e" />
+              <Ionicons name="call" size={24} color={theme.success} />
               <View style={styles.contactInfo}>
                 <Text style={styles.contactTitle}>Call Us</Text>
                 <Text style={styles.contactText}>+91 9876543210</Text>
@@ -135,7 +139,7 @@ export default function ServicesScreen() {
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.contactCard}>
-              <Ionicons name="chatbubble" size={24} color="#3b82f6" />
+              <Ionicons name="chatbubble" size={24} color={theme.primary} />
               <View style={styles.contactInfo}>
                 <Text style={styles.contactTitle}>Live Chat</Text>
                 <Text style={styles.contactText}>Get instant support</Text>
@@ -148,16 +152,16 @@ export default function ServicesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.background,
   },
   header: {
     paddingTop: 20,
     paddingHorizontal: 20,
     paddingBottom: 30,
-    backgroundColor: '#059669',
+    backgroundColor: theme.success,
   },
   title: {
     fontSize: 28,
@@ -182,22 +186,22 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#1f2937',
+    color: theme.text,
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.textSecondary,
     marginBottom: 20,
   },
   servicesGrid: {
     gap: 16,
   },
   serviceCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.card,
     borderRadius: 16,
     borderLeftWidth: 5,
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -226,17 +230,17 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f2937',
+    color: theme.text,
     marginBottom: 4,
   },
   servicePrice: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#059669',
+    color: theme.success,
   },
   serviceDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.textSecondary,
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -250,7 +254,7 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 12,
-    color: '#059669',
+    color: theme.success,
     marginBottom: 2,
   },
   contactSection: {
@@ -259,11 +263,11 @@ const styles = StyleSheet.create({
   contactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.card,
     padding: 20,
     borderRadius: 12,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -275,11 +279,11 @@ const styles = StyleSheet.create({
   contactTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: theme.text,
     marginBottom: 2,
   },
   contactText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.textSecondary,
   },
 });
