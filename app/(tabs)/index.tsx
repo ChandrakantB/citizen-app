@@ -9,6 +9,7 @@ import {
   Image,
   Platform,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -18,6 +19,8 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useData } from "../../contexts/DataContext";
 import EducationalContent from "../../components/EducationalContent";
 import NearbyFacilitiesMap from "../../components/NearbyFacilitiesMap";
+
+const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { theme, isDark } = useTheme();
@@ -311,197 +314,244 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.appTitle}>Bin2Win</Text>
-          <Text style={styles.subtitle}>Smart Waste Management</Text>
+        {/* Enhanced Hero Section */}
+        <View style={styles.heroSection}>
+          <View style={styles.heroBackground}>
+            <View style={styles.heroGradient} />
+          </View>
+          <View style={styles.heroContent}>
+            <View style={styles.appBadge}>
+              <Ionicons name="leaf" size={32} color="#ffffff" />
+            </View>
+            <Text style={styles.heroTitle}>Bin2Win</Text>
+            <Text style={styles.heroSubtitle}>Smart Waste Management for a Cleaner Tomorrow</Text>
+            <View style={styles.userGreeting}>
+              <Text style={styles.welcomeText}>
+                Welcome back, {user?.name || "Eco Warrior"}! 👋
+              </Text>
+            </View>
+          </View>
         </View>
 
-        {/* Main Content */}
-        <View style={styles.content}>
-          <View style={styles.welcomeCard}>
-            <Ionicons name="leaf" size={48} color={theme.success} />
-            <Text style={styles.welcomeText}>
-              Welcome back, {user?.name || "User"}!
-            </Text>
-            <Text style={styles.description}>
-              Ready to make a positive impact on your community?
-            </Text>
+        {/* Latest Report Preview */}
+        {selectedImage && (
+          <View style={styles.latestReportCard}>
+            <View style={styles.reportHeader}>
+              <View style={styles.reportStatusBadge}>
+                <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+                <Text style={styles.reportStatusText}>Report Submitted</Text>
+              </View>
+              <Text style={styles.reportTime}>Just now</Text>
+            </View>
+            <Image source={{ uri: selectedImage }} style={styles.reportImage} />
+            <View style={styles.reportDetails}>
+              <Text style={styles.reportLocation}>{reportLocation}</Text>
+              <Text style={styles.pointsEarned}>+10 Points Earned! 🏆</Text>
+            </View>
           </View>
+        )}
 
-          {selectedImage && (
-            <View style={styles.photoPreview}>
-              <Text style={styles.photoTitle}>Latest Report:</Text>
-              <Image
-                source={{ uri: selectedImage }}
-                style={styles.previewImage}
-              />
-              <View style={styles.reportInfo}>
-                <Text style={styles.reportStatus}>
-                  Report Submitted Successfully
-                </Text>
-                <Text style={styles.reportLocation}>{reportLocation}</Text>
+        {/* Enhanced Submit Report Button */}
+        <View style={styles.primaryActionSection}>
+          <TouchableOpacity
+            style={styles.primaryReportButton}
+            onPress={() => {
+              console.log("Primary report button clicked!");
+              showPhotoOptions();
+            }}
+            activeOpacity={0.8}
+          >
+            <View style={styles.reportButtonGradient}>
+              <View style={styles.reportButtonContent}>
+                <View style={styles.reportButtonIcon}>
+                  <Ionicons name="camera" size={28} color="#ffffff" />
+                </View>
+                <View style={styles.reportButtonText}>
+                  <Text style={styles.reportButtonTitle}>Submit Waste Report</Text>
+                  <Text style={styles.reportButtonTagline}>Get response within 10 seconds ⚡</Text>
+                </View>
+                <View style={styles.reportButtonArrow}>
+                  <Ionicons name="arrow-forward" size={24} color="#ffffff" />
+                </View>
               </View>
             </View>
-          )}
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.quickActions}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-
+        {/* Quick Actions Grid */}
+        <View style={styles.quickActionsSection}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          
+          <View style={styles.actionGrid}>
             <TouchableOpacity
-              style={styles.reportButton}
-              onPress={() => {
-                console.log("Report button clicked!");
-                showPhotoOptions();
-              }}
-            >
-              <Ionicons name="camera" size={24} color="#ffffff" />
-              <Text style={styles.reportButtonText}>Submit Waste Report</Text>
-              <Ionicons name="chevron-forward" size={20} color="#ffffff" />
-            </TouchableOpacity>
-
-            <View style={styles.actionGrid}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => {
-                  if (Platform.OS === "web") {
-                    alert(
-                      "Find Bins feature coming soon!\n\nThis will show nearby waste bins on a map."
-                    );
-                  } else {
-                    Alert.alert(
-                      "Find Bins",
-                      "This feature will show nearby waste bins on a map."
-                    );
-                  }
-                }}
-              >
-                <Ionicons name="location" size={24} color={theme.primary} />
-                <Text style={styles.actionText}>Find Bins</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => {
-                  if (Platform.OS === "web") {
-                    alert(
-                      "Check the Reports tab to track your submitted reports status!"
-                    );
-                  } else {
-                    Alert.alert(
-                      "Track Status",
-                      "Check the Reports tab to track your submitted reports."
-                    );
-                  }
-                }}
-              >
-                <Ionicons name="time" size={24} color={theme.warning} />
-                <Text style={styles.actionText}>Track Status</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Educational Content Button */}
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                { backgroundColor: "#8b5cf6" + "20" },
-              ]}
-              onPress={() => setShowEducationalContent(true)}
-            >
-              <Ionicons name="book" size={24} color="#8b5cf6" />
-              <Text style={[styles.actionText, { color: "#8b5cf6" }]}>
-                Learn & Educate
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color="#8b5cf6" />
-            </TouchableOpacity>
-
-            {/* NEW: Nearby Facilities Map Button */}
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                { backgroundColor: theme.primary + "20" },
-              ]}
-              onPress={() => setShowNearbyFacilities(true)}
-            >
-              <Ionicons name="map" size={24} color={theme.primary} />
-              <Text style={[styles.actionText, { color: theme.primary }]}>
-                Find Nearby Facilities
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={theme.primary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
+              style={[styles.actionCard, styles.actionCardPrimary]}
               onPress={() => {
                 if (Platform.OS === "web") {
                   alert(
-                    `Your Current Rewards:\n\nPoints: ${
-                      user?.points || 0
-                    }\nReports: ${user?.reportsSubmitted || 0}\nLevel: ${
-                      user?.level || "New User"
-                    }\n\nKeep reporting to earn more rewards!`
+                    "Find Bins feature coming soon!\n\nThis will show nearby waste bins on a map."
                   );
                 } else {
                   Alert.alert(
-                    "Your Rewards",
-                    `Points: ${user?.points || 0}\nReports: ${
-                      user?.reportsSubmitted || 0
-                    }\nLevel: ${user?.level || "New User"}`
+                    "Find Bins",
+                    "This feature will show nearby waste bins on a map."
                   );
                 }
               }}
             >
-              <Ionicons name="trophy" size={24} color={theme.success} />
-              <Text style={styles.actionText}>View Rewards & Achievements</Text>
+              <View style={styles.actionIconContainer}>
+                <Ionicons name="location" size={24} color="#3b82f6" />
+              </View>
+              <Text style={styles.actionTitle}>Find Bins</Text>
+              <Text style={styles.actionSubtitle}>Nearby locations</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.actionCardSecondary]}
+              onPress={() => {
+                if (Platform.OS === "web") {
+                  alert(
+                    "Check the Reports tab to track your submitted reports status!"
+                  );
+                } else {
+                  Alert.alert(
+                    "Track Status",
+                    "Check the Reports tab to track your submitted reports."
+                  );
+                }
+              }}
+            >
+              <View style={styles.actionIconContainer}>
+                <Ionicons name="time" size={24} color="#f59e0b" />
+              </View>
+              <Text style={styles.actionTitle}>Track Status</Text>
+              <Text style={styles.actionSubtitle}>Monitor progress</Text>
             </TouchableOpacity>
           </View>
 
-          {/* User Stats */}
-          <View style={styles.statsSection}>
-            <Text style={styles.sectionTitle}>Your Impact Today</Text>
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <Ionicons
-                  name="document-text"
-                  size={28}
-                  color={theme.primary}
-                />
-                <Text style={styles.statNumber}>
-                  {user?.reportsSubmitted || 0}
-                </Text>
+          <TouchableOpacity
+            style={styles.fullWidthActionCard}
+            onPress={() => setShowEducationalContent(true)}
+          >
+            <View style={styles.fullActionContent}>
+              <View style={[styles.actionIconContainer, { backgroundColor: "#8b5cf6" + "20" }]}>
+                <Ionicons name="school" size={24} color="#8b5cf6" />
+              </View>
+              <View style={styles.fullActionText}>
+                <Text style={[styles.actionTitle, { color: "#8b5cf6" }]}>Learn & Educate</Text>
+                <Text style={styles.actionSubtitle}>Waste management tips & guides</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#8b5cf6" />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.fullWidthActionCard}
+            onPress={() => setShowNearbyFacilities(true)}
+          >
+            <View style={styles.fullActionContent}>
+              <View style={[styles.actionIconContainer, { backgroundColor: theme.primary + "20" }]}>
+                <Ionicons name="map" size={24} color={theme.primary} />
+              </View>
+              <View style={styles.fullActionText}>
+                <Text style={[styles.actionTitle, { color: theme.primary }]}>Find Facilities</Text>
+                <Text style={styles.actionSubtitle}>Recycling centers & collection points</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={theme.primary} />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.fullWidthActionCard}
+            onPress={() => {
+              if (Platform.OS === "web") {
+                alert(
+                  `Your Current Rewards:\n\nPoints: ${
+                    user?.points || 0
+                  }\nReports: ${user?.reportsSubmitted || 0}\nLevel: ${
+                    user?.level || "New User"
+                  }\n\nKeep reporting to earn more rewards!`
+                );
+              } else {
+                Alert.alert(
+                  "Your Rewards",
+                  `Points: ${user?.points || 0}\nReports: ${
+                    user?.reportsSubmitted || 0
+                  }\nLevel: ${user?.level || "New User"}`
+                );
+              }
+            }}
+          >
+            <View style={styles.fullActionContent}>
+              <View style={[styles.actionIconContainer, { backgroundColor: "#10b981" + "20" }]}>
+                <Ionicons name="trophy" size={24} color="#10b981" />
+              </View>
+              <View style={styles.fullActionText}>
+                <Text style={[styles.actionTitle, { color: "#10b981" }]}>Rewards & Achievements</Text>
+                <Text style={styles.actionSubtitle}>View your eco-impact & badges</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#10b981" />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Enhanced User Stats */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Your Impact Today</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="document-text" size={24} color="#3b82f6" />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={styles.statNumber}>{user?.reportsSubmitted || 0}</Text>
                 <Text style={styles.statLabel}>Reports Submitted</Text>
               </View>
-              <View style={styles.statCard}>
-                <Ionicons name="trophy" size={28} color={theme.warning} />
+            </View>
+            
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="trophy" size={24} color="#f59e0b" />
+              </View>
+              <View style={styles.statContent}>
                 <Text style={styles.statNumber}>{user?.points || 0}</Text>
                 <Text style={styles.statLabel}>Points Earned</Text>
               </View>
             </View>
-          </View>
 
-          {Platform.OS === "web" && (
-            <View style={styles.webNotice}>
-              <Ionicons
-                name="information-circle"
-                size={20}
-                color={theme.textSecondary}
-              />
-              <Text style={styles.webNoticeText}>
-                Full camera and location features available on mobile devices. Web version uses demo mode.
-              </Text>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="leaf" size={24} color="#10b981" />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={styles.statNumber}>
+                  {Math.round((user?.reportsSubmitted || 0) * 2.5)}kg
+                </Text>
+                <Text style={styles.statLabel}>CO₂ Saved</Text>
+              </View>
             </View>
-          )}
+          </View>
         </View>
+
+        {Platform.OS === "web" && (
+          <View style={styles.webNotice}>
+            <View style={styles.webNoticeIcon}>
+              <Ionicons name="information-circle" size={20} color="#6b7280" />
+            </View>
+            <Text style={styles.webNoticeText}>
+              Full camera and location features available on mobile devices. Web version uses demo mode.
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
-      {/* Educational Content Modal */}
+      {/* Modals */}
       <EducationalContent 
         visible={showEducationalContent}
         onClose={() => setShowEducationalContent(false)}
       />
 
-      {/* NEW: Nearby Facilities Map Modal */}
       <NearbyFacilitiesMap 
         visible={showNearbyFacilities}
         onClose={() => setShowNearbyFacilities(false)}
@@ -519,189 +569,334 @@ const createStyles = (theme: any) =>
     scrollView: {
       flex: 1,
     },
-    header: {
-      paddingTop: 20,
-      paddingHorizontal: 20,
-      paddingBottom: 30,
-      backgroundColor: theme.header,
-    },
-    appTitle: {
-      fontSize: 32,
-      fontWeight: "bold",
-      color: "#ffffff",
-      textAlign: "center",
-    },
-    subtitle: {
-      fontSize: 16,
-      color: "#bfdbfe",
-      textAlign: "center",
-      marginTop: 5,
-    },
-    content: {
-      paddingHorizontal: 20,
-      paddingTop: 30,
+    scrollContent: {
       paddingBottom: 100,
     },
-    welcomeCard: {
+    
+    // Enhanced Hero Section
+    heroSection: {
+      height: 280,
+      position: 'relative',
+      marginBottom: 24,
+    },
+    heroBackground: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: '#3b82f6',
+    },
+    heroGradient: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(59, 130, 246, 0.9)',
+    },
+    heroContent: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+      position: 'relative',
+      zIndex: 1,
+    },
+    appBadge: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 16,
+      borderWidth: 2,
+      borderColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    heroTitle: {
+      fontSize: 36,
+      fontWeight: '700',
+      color: '#ffffff',
+      textAlign: 'center',
+      marginBottom: 8,
+      letterSpacing: -1,
+    },
+    heroSubtitle: {
+      fontSize: 16,
+      color: 'rgba(255, 255, 255, 0.9)',
+      textAlign: 'center',
+      marginBottom: 24,
+      lineHeight: 22,
+    },
+    userGreeting: {
+      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 25,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.2)',
+    },
+    welcomeText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#ffffff',
+      textAlign: 'center',
+    },
+
+    // Latest Report Card
+    latestReportCard: {
       backgroundColor: theme.card,
+      borderRadius: 20,
+      marginHorizontal: 20,
+      marginBottom: 24,
+      overflow: 'hidden',
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    reportHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    reportStatusBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#10b981' + '20',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 12,
+      gap: 6,
+    },
+    reportStatusText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#10b981',
+    },
+    reportTime: {
+      fontSize: 12,
+      color: theme.textSecondary,
+    },
+    reportImage: {
+      width: '100%',
+      height: 200,
+      resizeMode: 'cover',
+    },
+    reportDetails: {
+      padding: 16,
+      gap: 8,
+    },
+    reportLocation: {
+      fontSize: 14,
+      color: theme.text,
+      fontWeight: '500',
+    },
+    pointsEarned: {
+      fontSize: 14,
+      color: '#f59e0b',
+      fontWeight: '600',
+    },
+
+    // Enhanced Primary Report Button
+    primaryActionSection: {
+      paddingHorizontal: 20,
+      marginBottom: 32,
+    },
+    primaryReportButton: {
+      borderRadius: 24,
+      overflow: 'hidden',
+      shadowColor: '#dc2626',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.3,
+      shadowRadius: 16,
+      elevation: 8,
+    },
+    reportButtonGradient: {
+      backgroundColor: '#dc2626',
+      paddingVertical: 24,
+      paddingHorizontal: 24,
+    },
+    reportButtonContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    reportButtonIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    reportButtonText: {
+      flex: 1,
+    },
+    reportButtonTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: '#ffffff',
+      marginBottom: 4,
+    },
+    reportButtonTagline: {
+      fontSize: 14,
+      color: 'rgba(255, 255, 255, 0.9)',
+      fontWeight: '500',
+    },
+    reportButtonArrow: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+
+    // Enhanced Quick Actions
+    quickActionsSection: {
+      paddingHorizontal: 20,
+      marginBottom: 32,
+    },
+    sectionTitle: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: theme.text,
+      marginBottom: 20,
+      letterSpacing: -0.5,
+    },
+    actionGrid: {
+      flexDirection: 'row',
+      gap: 16,
+      marginBottom: 16,
+    },
+    actionCard: {
+      flex: 1,
       borderRadius: 16,
-      padding: 30,
-      alignItems: "center",
+      padding: 20,
+      alignItems: 'center',
       shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 8,
       elevation: 3,
-      marginBottom: 30,
     },
-    welcomeText: {
-      fontSize: 24,
-      fontWeight: "600",
-      color: theme.text,
-      marginTop: 15,
-      textAlign: "center",
-    },
-    description: {
-      fontSize: 16,
-      color: theme.textSecondary,
-      textAlign: "center",
-      marginTop: 10,
-      lineHeight: 22,
-    },
-    photoPreview: {
+    actionCardPrimary: {
       backgroundColor: theme.card,
-      borderRadius: 16,
-      padding: 15,
-      marginBottom: 30,
-      shadowColor: theme.shadow,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
     },
-    photoTitle: {
+    actionCardSecondary: {
+      backgroundColor: theme.card,
+    },
+    actionIconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: '#3b82f6' + '20',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    actionTitle: {
       fontSize: 16,
-      fontWeight: "600",
+      fontWeight: '600',
       color: theme.text,
-      marginBottom: 10,
+      textAlign: 'center',
+      marginBottom: 4,
     },
-    previewImage: {
-      width: "100%",
-      height: 200,
-      borderRadius: 12,
-      marginBottom: 10,
-    },
-    reportInfo: {
-      gap: 4,
-    },
-    reportStatus: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: theme.success,
-    },
-    reportLocation: {
+    actionSubtitle: {
       fontSize: 12,
       color: theme.textSecondary,
+      textAlign: 'center',
+      lineHeight: 16,
     },
-    quickActions: {
-      marginBottom: 30,
-    },
-    sectionTitle: {
-      fontSize: 20,
-      fontWeight: "600",
-      color: theme.text,
-      marginBottom: 20,
-    },
-    reportButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      backgroundColor: theme.error,
-      padding: 20,
+    fullWidthActionCard: {
+      backgroundColor: theme.card,
       borderRadius: 16,
-      marginBottom: 15,
-      shadowColor: theme.error,
+      padding: 20,
+      marginBottom: 12,
+      shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
+      shadowOpacity: 0.1,
       shadowRadius: 8,
       elevation: 3,
     },
-    reportButtonText: {
-      fontSize: 18,
-      fontWeight: "600",
-      color: "#ffffff",
-      flex: 1,
-      marginLeft: 15,
+    fullActionContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
     },
-    actionGrid: {
-      flexDirection: "row",
-      gap: 15,
-      marginBottom: 15,
-    },
-    actionButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: theme.card,
-      padding: 20,
-      borderRadius: 12,
-      marginBottom: 15,
-      shadowColor: theme.shadow,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
+    fullActionText: {
       flex: 1,
     },
-    actionText: {
-      fontSize: 16,
-      fontWeight: "500",
-      color: theme.text,
-      marginLeft: 15,
-      flex: 1,
-    },
+
+    // Enhanced Stats Section
     statsSection: {
-      marginBottom: 30,
+      paddingHorizontal: 20,
+      marginBottom: 32,
     },
-    statsGrid: {
-      flexDirection: "row",
-      gap: 15,
+    statsContainer: {
+      flexDirection: 'row',
+      gap: 12,
     },
     statCard: {
       flex: 1,
       backgroundColor: theme.card,
-      padding: 20,
-      borderRadius: 12,
-      alignItems: "center",
+      borderRadius: 16,
+      padding: 16,
+      alignItems: 'center',
       shadowColor: theme.shadow,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    statIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: '#3b82f6' + '20',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    statContent: {
+      alignItems: 'center',
     },
     statNumber: {
-      fontSize: 28,
-      fontWeight: "bold",
+      fontSize: 24,
+      fontWeight: '700',
       color: theme.text,
-      marginTop: 8,
       marginBottom: 4,
     },
     statLabel: {
       fontSize: 12,
       color: theme.textSecondary,
-      textAlign: "center",
+      textAlign: 'center',
+      fontWeight: '500',
     },
+
+    // Web Notice
     webNotice: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: theme.warning + "20",
-      padding: 15,
+      flexDirection: 'row',
+      backgroundColor: '#f3f4f6',
+      marginHorizontal: 20,
+      padding: 16,
       borderRadius: 12,
-      marginTop: 10,
+      alignItems: 'flex-start',
+      gap: 12,
+    },
+    webNoticeIcon: {
+      marginTop: 2,
     },
     webNoticeText: {
-      fontSize: 14,
-      color: theme.textSecondary,
-      marginLeft: 10,
       flex: 1,
+      fontSize: 14,
+      color: '#6b7280',
+      lineHeight: 20,
     },
   });

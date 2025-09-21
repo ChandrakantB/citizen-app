@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Storage } from '../utils/storage'; // Changed this line
+import { Storage } from '../utils/storage';
 
 export interface User {
   id: string;
@@ -27,15 +27,28 @@ export interface WasteReport {
   completedDate?: string;
 }
 
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  type: 'report' | 'service' | 'community' | 'general';
+  relatedId?: string;
+}
+
 interface DataContextType {
   user: User | null;
   reports: WasteReport[];
+  notifications: Notification[];
   isAuthenticated: boolean;
   loginUser: (email: string, password: string) => Promise<boolean>;
   registerUser: (userData: Omit<User, 'id' | 'joinDate' | 'points' | 'reportsSubmitted'>) => Promise<boolean>;
   logoutUser: () => Promise<void>;
   submitReport: (report: Omit<WasteReport, 'id' | 'userId' | 'date' | 'time' | 'status'>) => Promise<void>;
   updateReportStatus: (reportId: string, status: WasteReport['status'], assignedTo?: string, completedDate?: string) => Promise<void>;
+  markNotificationAsRead: (notificationId: string) => Promise<void>;
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => Promise<void>;
   loading: boolean;
 }
 
@@ -44,6 +57,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [reports, setReports] = useState<WasteReport[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,6 +68,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await loadUserData();
       await loadReportsData();
+      await loadNotificationsData();
     } catch (error) {
       console.log('Error initializing data:', error);
     } finally {
@@ -63,7 +78,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserData = async () => {
     try {
-      const savedUser = await Storage.getItem('user'); // Changed from AsyncStorage
+      const savedUser = await Storage.getItem('user');
       if (savedUser) {
         const userData = JSON.parse(savedUser);
         setUser(userData);
@@ -75,7 +90,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadReportsData = async () => {
     try {
-      const savedReports = await Storage.getItem('reports'); // Changed from AsyncStorage
+      const savedReports = await Storage.getItem('reports');
       if (savedReports) {
         setReports(JSON.parse(savedReports));
       }
@@ -84,9 +99,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loadNotificationsData = async () => {
+    try {
+      const savedNotifications = await Storage.getItem('notifications');
+      if (savedNotifications) {
+        setNotifications(JSON.parse(savedNotifications));
+      }
+    } catch (error) {
+      console.log('Error loading notifications data:', error);
+    }
+  };
+
   const saveUserData = async (userData: User) => {
     try {
-      await Storage.setItem('user', JSON.stringify(userData)); // Changed from AsyncStorage
+      await Storage.setItem('user', JSON.stringify(userData));
       setUser(userData);
     } catch (error) {
       console.log('Error saving user data:', error);
@@ -96,10 +122,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const saveReportsData = async (reportsData: WasteReport[]) => {
     try {
-      await Storage.setItem('reports', JSON.stringify(reportsData)); // Changed from AsyncStorage
+      await Storage.setItem('reports', JSON.stringify(reportsData));
       setReports(reportsData);
     } catch (error) {
       console.log('Error saving reports data:', error);
+      throw error;
+    }
+  };
+
+  const saveNotificationsData = async (notificationsData: Notification[]) => {
+    try {
+      await Storage.setItem('notifications', JSON.stringify(notificationsData));
+      setNotifications(notificationsData);
+    } catch (error) {
+      console.log('Error saving notifications data:', error);
       throw error;
     }
   };
@@ -124,12 +160,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         await saveUserData(demoUser);
+        
+        // Add welcome notification for demo user
+        await addNotification({
+          title: 'Welcome to Bin2Win!',
+          message: 'Start your eco-journey by submitting your first waste report',
+          read: false,
+          type: 'general',
+        });
+        
         console.log('Demo user saved successfully');
         return true;
       }
 
       // Check registered users
-      const savedUsers = await Storage.getItem('users'); // Changed from AsyncStorage
+      const savedUsers = await Storage.getItem('users');
       console.log('Saved users from storage:', savedUsers);
       
       const users: User[] = savedUsers ? JSON.parse(savedUsers) : [];
@@ -153,7 +198,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const registerUser = async (userData: Omit<User, 'id' | 'joinDate' | 'points' | 'reportsSubmitted'>): Promise<boolean> => {
     try {
-      const savedUsers = await Storage.getItem('users'); // Changed from AsyncStorage
+      const savedUsers = await Storage.getItem('users');
       const users: User[] = savedUsers ? JSON.parse(savedUsers) : [];
 
       // Check if user already exists
@@ -167,16 +212,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...userData,
         id: Date.now().toString(),
         joinDate: new Date().toLocaleDateString(),
+        level: 'Eco Rookie',
         points: 0,
         reportsSubmitted: 0,
       };
 
       // Save to users list
       users.push(newUser);
-      await Storage.setItem('users', JSON.stringify(users)); // Changed from AsyncStorage
+      await Storage.setItem('users', JSON.stringify(users));
 
       // Set as current user
       await saveUserData(newUser);
+
+      // Add welcome notification
+      await addNotification({
+        title: 'Welcome to Bin2Win!',
+        message: 'Your account has been created successfully. Start making a difference!',
+        read: false,
+        type: 'general',
+      });
+
       return true;
     } catch (error) {
       console.log('Registration error:', error);
@@ -186,8 +241,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logoutUser = async (): Promise<void> => {
     try {
-      await Storage.removeItem('user'); // Changed from AsyncStorage
+      await Storage.removeItem('user');
       setUser(null);
+      setNotifications([]);
     } catch (error) {
       console.log('Logout error:', error);
       throw error;
@@ -195,8 +251,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const submitReport = async (reportData: Omit<WasteReport, 'id' | 'userId' | 'date' | 'time' | 'status'>): Promise<void> => {
-    console.log('submitReport called with:', reportData); // Debug log
-    console.log('Current user:', user); // Debug log
+    console.log('submitReport called with:', reportData);
+    console.log('Current user:', user);
     
     if (!user) {
       console.log('No user found, throwing error');
@@ -213,12 +269,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         status: 'pending',
       };
 
-      console.log('Created new report:', newReport); // Debug log
+      console.log('Created new report:', newReport);
 
       const updatedReports = [...reports, newReport];
       await saveReportsData(updatedReports);
 
-      console.log('Reports saved successfully'); // Debug log
+      console.log('Reports saved successfully');
+
+      // Add notification for new report
+      await addNotification({
+        title: 'Report Submitted Successfully',
+        message: `Your ${reportData.type} waste report has been submitted. You earned 10 points!`,
+        read: false,
+        type: 'report',
+        relatedId: newReport.id,
+      });
 
       // Update user stats
       const updatedUser: User = {
@@ -227,9 +292,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         points: user.points + 10,
       };
       
-      console.log('Updating user stats:', updatedUser); // Debug log
+      console.log('Updating user stats:', updatedUser);
       await saveUserData(updatedUser);
-      console.log('User stats updated successfully'); // Debug log
+      console.log('User stats updated successfully');
       
     } catch (error) {
       console.log('Error submitting report:', error);
@@ -258,6 +323,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       await saveReportsData(updatedReports);
 
+      // Add notification for status update
+      const statusMessages = {
+        'pending': 'Your report is pending review',
+        'in-progress': 'Your report is being processed',
+        'completed': 'Your report has been completed! You earned 5 bonus points!'
+      };
+
+      await addNotification({
+        title: 'Report Status Updated',
+        message: statusMessages[status],
+        read: false,
+        type: 'report',
+        relatedId: reportId,
+      });
+
       // Award bonus points for completed reports
       if (status === 'completed' && user) {
         const updatedUser: User = {
@@ -272,18 +352,51 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const markNotificationAsRead = async (notificationId: string): Promise<void> => {
+    try {
+      const updatedNotifications = notifications.map(notification =>
+        notification.id === notificationId
+          ? { ...notification, read: true }
+          : notification
+      );
+      await saveNotificationsData(updatedNotifications);
+    } catch (error) {
+      console.log('Error marking notification as read:', error);
+      throw error;
+    }
+  };
+
+  const addNotification = async (notificationData: Omit<Notification, 'id' | 'timestamp'>): Promise<void> => {
+    try {
+      const newNotification: Notification = {
+        ...notificationData,
+        id: Date.now().toString(),
+        timestamp: new Date().toLocaleString(),
+      };
+
+      const updatedNotifications = [newNotification, ...notifications];
+      await saveNotificationsData(updatedNotifications);
+    } catch (error) {
+      console.log('Error adding notification:', error);
+      throw error;
+    }
+  };
+
   const isAuthenticated = user !== null;
 
   return (
     <DataContext.Provider value={{
       user,
       reports: user ? reports.filter(r => r.userId === user.id) : [],
+      notifications: user ? notifications : [],
       isAuthenticated,
       loginUser,
       registerUser,
       logoutUser,
       submitReport,
       updateReportStatus,
+      markNotificationAsRead,
+      addNotification,
       loading,
     }}>
       {children}
