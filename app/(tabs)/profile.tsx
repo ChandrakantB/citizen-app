@@ -2,25 +2,25 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, Alert, ScrollView, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useData } from '../../contexts/DataContext';
 
 export default function ProfileScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
-  
-  // Create dynamic styles
+  const { user, logoutUser, loading } = useData();
   const styles = createStyles(theme);
 
-  // Dummy user data - replace with actual user data from context/state
-  const user = {
-    name: 'John Doe',
-    email: 'demo@bin2win.com',
-    phone: '+91 9876543210',
-    joinDate: 'January 2024',
-    reportsSubmitted: 12,
-    pointsEarned: 85,
-    level: 'Eco Warrior'
-  };
+  // Don't navigate immediately - wait for data to load
+  useEffect(() => {
+    // Only redirect if we're sure the user is not authenticated AND loading is complete
+    if (!loading && !user) {
+      // Use setTimeout to ensure the component is fully mounted
+      setTimeout(() => {
+        router.replace('/(auth)/welcome');
+      }, 100);
+    }
+  }, [user, loading]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -31,8 +31,16 @@ export default function ProfileScreen() {
         { 
           text: 'Logout', 
           style: 'destructive',
-          onPress: () => {
-            router.replace('/(auth)/welcome');
+          onPress: async () => {
+            try {
+              await logoutUser();
+              // Use setTimeout to ensure logout completes
+              setTimeout(() => {
+                router.replace('/(auth)/welcome');
+              }, 100);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
           }
         }
       ]
@@ -42,6 +50,37 @@ export default function ProfileScreen() {
   const handleEditProfile = () => {
     Alert.alert('Edit Profile', 'Profile editing will be available soon!');
   };
+
+  // Show loading state while data is being fetched
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <Ionicons name="person-circle" size={64} color={theme.textSecondary} />
+        <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading profile...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Show login prompt if no user (but don't navigate immediately)
+  if (!user) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <Ionicons name="person-circle" size={64} color={theme.textSecondary} />
+        <Text style={[styles.noUserTitle, { color: theme.text }]}>Not Logged In</Text>
+        <Text style={[styles.noUserText, { color: theme.textSecondary }]}>
+          Please log in to view your profile
+        </Text>
+        <TouchableOpacity 
+          style={[styles.loginButton, { backgroundColor: theme.primary }]}
+          onPress={() => router.replace('/(auth)/welcome')}
+        >
+          <Text style={styles.loginButtonText}>Go to Login</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
   const profileOptions = [
     { icon: 'person-outline', title: 'Edit Profile', action: handleEditProfile },
@@ -96,13 +135,15 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.statCard}>
                 <Ionicons name="trophy" size={24} color={theme.warning} />
-                <Text style={styles.statNumber}>{user.pointsEarned}</Text>
+                <Text style={styles.statNumber}>{user.points}</Text>
                 <Text style={styles.statLabel}>Points</Text>
               </View>
               <View style={styles.statCard}>
                 <Ionicons name="time" size={24} color={theme.primary} />
-                <Text style={styles.statNumber}>4</Text>
-                <Text style={styles.statLabel}>Months</Text>
+                <Text style={styles.statNumber}>
+                  {new Date().getFullYear() - new Date(user.joinDate).getFullYear() || 'New'}
+                </Text>
+                <Text style={styles.statLabel}>Years</Text>
               </View>
             </View>
           </View>
@@ -193,6 +234,31 @@ const createStyles = (theme: any) => StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 100,
   },
+  loadingText: {
+    fontSize: 16,
+    marginTop: 16,
+  },
+  noUserTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noUserText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 40,
+  },
+  loginButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  loginButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
   profileCard: {
     backgroundColor: theme.card,
     borderRadius: 16,
@@ -247,39 +313,40 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontWeight: '600',
     color: theme.success,
     backgroundColor: theme.success + '20',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 20,
+    gap: 4,
   },
   editButtonText: {
-    fontWeight: '500',
-    marginLeft: 5,
+    fontSize: 14,
+    fontWeight: '600',
   },
   statsSection: {
-    marginBottom: 25,
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: theme.text,
-    marginBottom: 15,
+    marginBottom: 12,
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   statCard: {
     flex: 1,
     backgroundColor: theme.card,
-    padding: 15,
+    padding: 16,
     borderRadius: 12,
     alignItems: 'center',
     shadowColor: theme.shadow,
@@ -296,16 +363,16 @@ const createStyles = (theme: any) => StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: theme.textSecondary,
+    textAlign: 'center',
   },
   infoSection: {
-    marginBottom: 25,
+    marginBottom: 20,
   },
   infoCard: {
     backgroundColor: theme.card,
     borderRadius: 12,
-    padding: 15,
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -315,19 +382,20 @@ const createStyles = (theme: any) => StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
   },
   infoLabel: {
-    fontSize: 16,
-    color: theme.text,
+    fontSize: 14,
+    color: theme.textSecondary,
     marginLeft: 12,
     flex: 1,
   },
   infoValue: {
     fontSize: 14,
-    color: theme.textSecondary,
+    color: theme.text,
+    fontWeight: '500',
   },
   optionsSection: {
     marginBottom: 30,
@@ -358,12 +426,10 @@ const createStyles = (theme: any) => StyleSheet.create({
     backgroundColor: theme.error + '20',
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.error + '40',
+    gap: 8,
   },
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 8,
   },
 });

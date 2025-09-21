@@ -1,65 +1,19 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, TouchableOpacity, ScrollView, Image, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useData } from '../../contexts/DataContext';
 
 export default function ReportsScreen() {
   const { theme, isDark } = useTheme();
+  const { user, reports, updateReportStatus } = useData();
   const styles = createStyles(theme);
   const [activeFilter, setActiveFilter] = useState('all');
 
-  // Dummy reports data - replace with actual data from backend
-  const reports = [
-    {
-      id: 1,
-      type: 'General Waste',
-      location: 'Main Street, Sector 12',
-      date: '2024-09-20',
-      time: '10:30 AM',
-      status: 'completed',
-      description: 'Overflowing garbage bin near bus stop',
-      image: 'https://via.placeholder.com/100x100/dc2626/ffffff?text=Waste',
-      assignedTo: 'Worker #123',
-      completedDate: '2024-09-21'
-    },
-    {
-      id: 2,
-      type: 'Medical Waste',
-      location: 'Hospital Road, Block A',
-      date: '2024-09-19',
-      time: '2:15 PM',
-      status: 'in-progress',
-      description: 'Medical waste disposal needed',
-      image: 'https://via.placeholder.com/100x100/dc2626/ffffff?text=Medical',
-      assignedTo: 'Worker #456',
-      completedDate: null
-    },
-    {
-      id: 3,
-      type: 'Construction Debris',
-      location: 'Building Site, Phase 2',
-      date: '2024-09-18',
-      time: '11:45 AM',
-      status: 'pending',
-      description: 'Construction waste blocking pathway',
-      image: 'https://via.placeholder.com/100x100/f59e0b/ffffff?text=Construction',
-      assignedTo: null,
-      completedDate: null
-    },
-    {
-      id: 4,
-      type: 'Electronic Waste',
-      location: 'Tech Park, Office Complex',
-      date: '2024-09-17',
-      time: '3:20 PM',
-      status: 'completed',
-      description: 'Old computers and electronics disposal',
-      image: 'https://via.placeholder.com/100x100/3b82f6/ffffff?text=E-Waste',
-      assignedTo: 'Worker #789',
-      completedDate: '2024-09-18'
-    },
-  ];
+  // Debug logs
+  console.log('Reports screen - User:', user);
+  console.log('Reports screen - Reports:', reports);
 
   const filters = [
     { key: 'all', label: 'All', count: reports.length },
@@ -87,6 +41,67 @@ export default function ReportsScreen() {
       case 'in-progress': return 'time';
       case 'pending': return 'hourglass';
       default: return 'help-circle';
+    }
+  };
+
+  const handleReportAction = (reportId: string, currentStatus: string) => {
+    const actions = [];
+    
+    if (currentStatus === 'pending') {
+      actions.push({
+        text: 'Mark In Progress',
+        action: () => updateReportStatus(reportId, 'in-progress', 'Worker #' + Math.floor(Math.random() * 999))
+      });
+    }
+    
+    if (currentStatus === 'in-progress') {
+      actions.push({
+        text: 'Mark Completed',
+        action: () => updateReportStatus(reportId, 'completed', undefined, new Date().toLocaleDateString())
+      });
+    }
+
+    actions.push({
+      text: 'View Details',
+      action: () => {
+        const report = reports.find(r => r.id === reportId);
+        if (report) {
+          showReportDetails(report);
+        }
+      }
+    });
+
+    if (Platform.OS === 'web') {
+      const options = actions.map((action, index) => `${index + 1}. ${action.text}`).join('\n');
+      const choice = prompt(`📋 Report Actions:\n\n${options}\n\nSelect option (1-${actions.length}):`);
+      const actionIndex = parseInt(choice || '0') - 1;
+      
+      if (actionIndex >= 0 && actionIndex < actions.length) {
+        actions[actionIndex].action();
+      }
+    } else {
+      Alert.alert(
+        'Report Actions',
+        'Choose an action:',
+        [
+          ...actions.map(action => ({
+            text: action.text,
+            onPress: action.action
+          })),
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
+    }
+  };
+
+  const showReportDetails = (report: any) => {
+    if (Platform.OS === 'web') {
+      alert(`📋 Report Details:\n\n🗑️ Type: ${report.type}\n📍 Location: ${report.location}\n📝 Description: ${report.description}\n📅 Date: ${report.date}\n⏰ Time: ${report.time}\n📊 Status: ${report.status}\n${report.assignedTo ? `👷 Assigned: ${report.assignedTo}` : ''}\n${report.completedDate ? `✅ Completed: ${report.completedDate}` : ''}`);
+    } else {
+      Alert.alert(
+        'Report Details',
+        `Type: ${report.type}\nLocation: ${report.location}\nDescription: ${report.description}\nDate: ${report.date} at ${report.time}\nStatus: ${report.status}${report.assignedTo ? `\nAssigned: ${report.assignedTo}` : ''}${report.completedDate ? `\nCompleted: ${report.completedDate}` : ''}`
+      );
     }
   };
 
@@ -141,18 +156,24 @@ export default function ReportsScreen() {
           {/* Reports List */}
           <View style={styles.reportsSection}>
             {filteredReports.length > 0 ? (
-              filteredReports.map((report) => (
-                <View key={report.id} style={styles.reportCard}>
+              filteredReports
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Sort by newest first
+                .map((report) => (
+                <TouchableOpacity 
+                  key={report.id} 
+                  style={styles.reportCard}
+                  onPress={() => handleReportAction(report.id, report.status)}
+                >
                   <View style={styles.reportHeader}>
                     <View style={styles.reportInfo}>
                       <Text style={styles.reportType}>{report.type}</Text>
                       <Text style={styles.reportLocation}>📍 {report.location}</Text>
                       <Text style={styles.reportDate}>
-                        {report.date} at {report.time}
+                        📅 {report.date} at {report.time}
                       </Text>
                     </View>
                     <View style={styles.reportImage}>
-                      <Image source={{ uri: report.image }} style={styles.image} />
+                      <Image source={{ uri: report.photoUri }} style={styles.image} />
                     </View>
                   </View>
 
@@ -172,12 +193,19 @@ export default function ReportsScreen() {
                       </Text>
                     </View>
 
-                    {report.assignedTo && (
+                    <TouchableOpacity style={styles.actionIcon}>
+                      <Ionicons name="ellipsis-horizontal" size={16} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {report.assignedTo && (
+                    <View style={styles.assignedInfo}>
+                      <Ionicons name="person" size={14} color={theme.warning} />
                       <Text style={styles.assignedText}>
                         Assigned to: {report.assignedTo}
                       </Text>
-                    )}
-                  </View>
+                    </View>
+                  )}
 
                   {report.completedDate && (
                     <View style={styles.completedInfo}>
@@ -187,44 +215,78 @@ export default function ReportsScreen() {
                       </Text>
                     </View>
                   )}
-                </View>
+                </TouchableOpacity>
               ))
             ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="document-outline" size={64} color={theme.textSecondary} />
-                <Text style={styles.emptyTitle}>No Reports Found</Text>
-                <Text style={styles.emptyText}>
+                <Text style={styles.emptyTitle}>
                   {activeFilter === 'all' 
-                    ? 'You haven\'t submitted any reports yet.'
-                    : `No ${activeFilter.replace('-', ' ')} reports found.`
+                    ? 'No Reports Yet' 
+                    : `No ${activeFilter.replace('-', ' ')} Reports`
                   }
                 </Text>
+                <Text style={styles.emptyText}>
+                  {activeFilter === 'all' 
+                    ? 'Submit your first waste report from the Home tab to get started!'
+                    : `You don't have any ${activeFilter.replace('-', ' ')} reports yet.`
+                  }
+                </Text>
+                
+                {activeFilter === 'all' && (
+                  <TouchableOpacity 
+                    style={styles.emptyButton}
+                    onPress={() => {
+                      // Navigate to home tab (you might need to import navigation)
+                      if (Platform.OS === 'web') {
+                        alert('📱 Go to the Home tab and click "Submit Waste Report" to create your first report!');
+                      } else {
+                        Alert.alert('Get Started', 'Go to the Home tab and click "Submit Waste Report" to create your first report!');
+                      }
+                    }}
+                  >
+                    <Ionicons name="add" size={20} color="#ffffff" />
+                    <Text style={styles.emptyButtonText}>Submit First Report</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
 
           {/* Summary Stats */}
-          <View style={styles.summarySection}>
-            <Text style={styles.sectionTitle}>Report Summary</Text>
-            <View style={styles.summaryGrid}>
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryNumber}>{reports.length}</Text>
-                <Text style={styles.summaryLabel}>Total Reports</Text>
-              </View>
-              <View style={styles.summaryCard}>
-                <Text style={[styles.summaryNumber, { color: theme.success }]}>
-                  {reports.filter(r => r.status === 'completed').length}
-                </Text>
-                <Text style={styles.summaryLabel}>Resolved</Text>
-              </View>
-              <View style={styles.summaryCard}>
-                <Text style={[styles.summaryNumber, { color: theme.warning }]}>
-                  {reports.filter(r => r.status === 'in-progress').length}
-                </Text>
-                <Text style={styles.summaryLabel}>In Progress</Text>
+          {reports.length > 0 && (
+            <View style={styles.summarySection}>
+              <Text style={styles.sectionTitle}>Report Summary</Text>
+              <View style={styles.summaryGrid}>
+                <View style={styles.summaryCard}>
+                  <Ionicons name="document-text" size={24} color={theme.primary} />
+                  <Text style={styles.summaryNumber}>{reports.length}</Text>
+                  <Text style={styles.summaryLabel}>Total Reports</Text>
+                </View>
+                <View style={styles.summaryCard}>
+                  <Ionicons name="checkmark-circle" size={24} color={theme.success} />
+                  <Text style={[styles.summaryNumber, { color: theme.success }]}>
+                    {reports.filter(r => r.status === 'completed').length}
+                  </Text>
+                  <Text style={styles.summaryLabel}>Completed</Text>
+                </View>
+                <View style={styles.summaryCard}>
+                  <Ionicons name="time" size={24} color={theme.warning} />
+                  <Text style={[styles.summaryNumber, { color: theme.warning }]}>
+                    {reports.filter(r => r.status === 'in-progress').length}
+                  </Text>
+                  <Text style={styles.summaryLabel}>In Progress</Text>
+                </View>
+                <View style={styles.summaryCard}>
+                  <Ionicons name="hourglass" size={24} color={theme.textSecondary} />
+                  <Text style={[styles.summaryNumber, { color: theme.textSecondary }]}>
+                    {reports.filter(r => r.status === 'pending').length}
+                  </Text>
+                  <Text style={styles.summaryLabel}>Pending</Text>
+                </View>
               </View>
             </View>
-          </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -377,10 +439,23 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontWeight: '600',
     marginLeft: 4,
   },
+  actionIcon: {
+    padding: 4,
+  },
+  assignedInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.warning + '20',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
   assignedText: {
     fontSize: 11,
-    color: theme.textSecondary,
-    fontStyle: 'italic',
+    color: theme.warning,
+    fontWeight: '500',
+    marginLeft: 4,
   },
   completedInfo: {
     flexDirection: 'row',
@@ -411,7 +486,22 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontSize: 14,
     color: theme.textSecondary,
     textAlign: 'center',
+    paddingHorizontal: 40,
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.primary,
     paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  emptyButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    marginLeft: 8,
   },
   summarySection: {
     paddingHorizontal: 20,
@@ -440,13 +530,14 @@ const createStyles = (theme: any) => StyleSheet.create({
     elevation: 2,
   },
   summaryNumber: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: theme.text,
+    marginTop: 8,
     marginBottom: 4,
   },
   summaryLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: theme.textSecondary,
     textAlign: 'center',
   },
