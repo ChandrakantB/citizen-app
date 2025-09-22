@@ -32,6 +32,7 @@ export default function HomeScreen() {
   );
   const [showEducationalContent, setShowEducationalContent] = useState(false);
   const [showNearbyFacilities, setShowNearbyFacilities] = useState(false);
+  const [lastAnalysis, setLastAnalysis] = useState<any>(null);
   
   // Debug logs
   console.log("Home screen render - User:", user);
@@ -249,34 +250,75 @@ export default function HomeScreen() {
     console.log("Current user before submit:", user);
 
     try {
-      console.log("About to call submitReport...");
-      await submitReport({
+      console.log("About to call submitReport with analysis...");
+      
+      // Show loading state
+      if (Platform.OS === "web") {
+        // Can't show loading for web prompts, but we can console log
+        console.log("🔍 Analyzing waste and submitting report...");
+      } else {
+        Alert.alert("Processing...", "Analyzing waste and submitting report...");
+      }
+      
+      // Submit report and get analysis
+      const result = await submitReport({
         type,
         location,
         description,
         photoUri,
       });
 
-      console.log("submitReport completed successfully");
+      console.log("submitReport completed successfully", result);
 
-      if (Platform.OS === "web") {
-        alert(
-          `Report Submitted!\n\n${type} report submitted successfully.\nYou earned 10 points!\n\nCheck your stats and reports tab.`
-        );
+      // Store the analysis for display
+      if (result.analysis) {
+        setLastAnalysis(result.analysis);
+      }
+
+      // Show success with analysis if available
+      if (result.analysis) {
+        const analysisText = `🎯 AI Analysis Results:\n\n` +
+          `🗑️ Waste Type: ${result.analysis.wasteType}\n` +
+          `⚡ Urgency: ${result.analysis.urgency}\n` +
+          `🔴 Severity: ${result.analysis.severity}\n` +
+          `♻️ Segregation: ${result.analysis.segregationLevel}\n\n` +
+          `📝 Analysis Details:\n${result.analysis.reasoning}\n\n` +
+          `✅ Report submitted successfully!\n🏆 You earned 10 green coins!`;
+
+        if (Platform.OS === "web") {
+          alert(analysisText);
+        } else {
+          Alert.alert("Report Submitted with AI Analysis!", analysisText, [
+            { 
+              text: "View in Reports", 
+              onPress: () => {
+                // Navigate to reports tab if navigation is available
+                console.log("Navigate to reports tab");
+              }
+            },
+            { text: "OK" }
+          ]);
+        }
       } else {
-        Alert.alert(
-          "Report Submitted!",
-          `Your ${type.toLowerCase()} report has been submitted successfully. You earned 10 points!`,
-          [{ text: "OK" }]
-        );
+        // Fallback message without analysis
+        const successText = `Your ${type.toLowerCase()} report has been submitted successfully.\n\n🏆 You earned 10 green coins!\n\n⚠️ AI analysis was unavailable, but your report is being processed.`;
+        
+        if (Platform.OS === "web") {
+          alert(`Report Submitted!\n\n${successText}\n\nCheck your reports tab for updates.`);
+        } else {
+          Alert.alert("Report Submitted!", successText, [{ text: "OK" }]);
+        }
       }
     } catch (error) {
       console.log("submitWasteReport error:", error);
 
+      // Hide loading and show error
+      const errorMessage = "Failed to submit report. Please try again.\n\nNote: Analysis requires internet connection.";
+
       if (Platform.OS === "web") {
-        alert("Error: Failed to submit report. Please try again.");
+        alert(`Error: ${errorMessage}`);
       } else {
-        Alert.alert("Error", "Failed to submit report. Please try again.");
+        Alert.alert("Error", errorMessage);
       }
     }
   };
@@ -326,7 +368,7 @@ export default function HomeScreen() {
               <Ionicons name="leaf" size={32} color="#ffffff" />
             </View>
             <Text style={styles.heroTitle}>Bin2Win</Text>
-            <Text style={styles.heroSubtitle}>Smart Waste Management for a Cleaner Tomorrow</Text>
+            <Text style={styles.heroSubtitle}>AI-Powered Smart Waste Management</Text>
             <View style={styles.userGreeting}>
               <Text style={styles.welcomeText}>
                 Welcome back, {user?.name || "Eco Warrior"}! 👋
@@ -335,7 +377,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Latest Report Preview */}
+        {/* Latest Report with Analysis Preview */}
         {selectedImage && (
           <View style={styles.latestReportCard}>
             <View style={styles.reportHeader}>
@@ -348,12 +390,48 @@ export default function HomeScreen() {
             <Image source={{ uri: selectedImage }} style={styles.reportImage} />
             <View style={styles.reportDetails}>
               <Text style={styles.reportLocation}>{reportLocation}</Text>
-              <Text style={styles.pointsEarned}>+10 Points Earned! 🏆</Text>
+              <Text style={styles.pointsEarned}>+10 Green Coins Earned! 🏆</Text>
+              
+              {lastAnalysis && (
+                <View style={styles.analysisPreview}>
+                  <View style={styles.analysisHeader}>
+                    <Ionicons name="analytics" size={16} color="#8b5cf6" />
+                    <Text style={styles.analysisTitle}>AI Analysis</Text>
+                  </View>
+                  <View style={styles.analysisContent}>
+                    <Text style={styles.analysisDetail}>
+                      🗑️ Type: {lastAnalysis.wasteType}
+                    </Text>
+                    <Text style={styles.analysisDetail}>
+                      🔴 Severity: {lastAnalysis.severity}
+                    </Text>
+                    <Text style={styles.analysisDetail}>
+                      ⚡ Urgency: {lastAnalysis.urgency}
+                    </Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.viewFullAnalysisButton}
+                    onPress={() => {
+                      if (Platform.OS === "web") {
+                        alert(`Full AI Analysis:\n\n${lastAnalysis.reasoning}\n\nSegregation: ${lastAnalysis.segregationReasoning || 'N/A'}`);
+                      } else {
+                        Alert.alert(
+                          "Full AI Analysis", 
+                          `${lastAnalysis.reasoning}\n\nSegregation Notes:\n${lastAnalysis.segregationReasoning || 'No specific segregation notes available.'}`
+                        );
+                      }
+                    }}
+                  >
+                    <Text style={styles.viewFullAnalysisText}>View Full Analysis</Text>
+                    <Ionicons name="chevron-forward" size={16} color="#8b5cf6" />
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
         )}
 
-        {/* Enhanced Submit Report Button */}
+        {/* Enhanced Submit Report Button with AI Badge */}
         <View style={styles.primaryActionSection}>
           <TouchableOpacity
             style={styles.primaryReportButton}
@@ -364,13 +442,17 @@ export default function HomeScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.reportButtonGradient}>
+              <View style={styles.aiPoweredBadge}>
+                <Ionicons name="flash" size={12} color="#ffffff" />
+                <Text style={styles.aiPoweredText}>AI-Powered</Text>
+              </View>
               <View style={styles.reportButtonContent}>
                 <View style={styles.reportButtonIcon}>
                   <Ionicons name="camera" size={28} color="#ffffff" />
                 </View>
                 <View style={styles.reportButtonText}>
                   <Text style={styles.reportButtonTitle}>Submit Waste Report</Text>
-                  <Text style={styles.reportButtonTagline}>Get response within 10 seconds ⚡</Text>
+                  <Text style={styles.reportButtonTagline}>Get AI analysis within 10 seconds ⚡</Text>
                 </View>
                 <View style={styles.reportButtonArrow}>
                   <Ionicons name="arrow-forward" size={24} color="#ffffff" />
@@ -412,21 +494,21 @@ export default function HomeScreen() {
               onPress={() => {
                 if (Platform.OS === "web") {
                   alert(
-                    "Check the Reports tab to track your submitted reports status!"
+                    "Check the Reports tab to track your submitted reports status and view AI analysis!"
                   );
                 } else {
                   Alert.alert(
                     "Track Status",
-                    "Check the Reports tab to track your submitted reports."
+                    "Check the Reports tab to track your submitted reports and view AI analysis."
                   );
                 }
               }}
             >
               <View style={styles.actionIconContainer}>
-                <Ionicons name="time" size={24} color="#f59e0b" />
+                <Ionicons name="analytics" size={24} color="#f59e0b" />
               </View>
-              <Text style={styles.actionTitle}>Track Status</Text>
-              <Text style={styles.actionSubtitle}>Monitor progress</Text>
+              <Text style={styles.actionTitle}>AI Analysis</Text>
+              <Text style={styles.actionSubtitle}>View insights</Text>
             </TouchableOpacity>
           </View>
 
@@ -516,19 +598,19 @@ export default function HomeScreen() {
               </View>
               <View style={styles.statContent}>
                 <Text style={styles.statNumber}>{user?.points || 0}</Text>
-                <Text style={styles.statLabel}>Points Earned</Text>
+                <Text style={styles.statLabel}>Green Coins</Text>
               </View>
             </View>
 
             <View style={styles.statCard}>
               <View style={styles.statIconContainer}>
-                <Ionicons name="leaf" size={24} color="#10b981" />
+                <Ionicons name="analytics" size={24} color="#8b5cf6" />
               </View>
               <View style={styles.statContent}>
                 <Text style={styles.statNumber}>
-                  {Math.round((user?.reportsSubmitted || 0) * 2.5)}kg
+                  {user?.reportsSubmitted || 0}
                 </Text>
-                <Text style={styles.statLabel}>CO₂ Saved</Text>
+                <Text style={styles.statLabel}>AI Analyzed</Text>
               </View>
             </View>
           </View>
@@ -540,7 +622,7 @@ export default function HomeScreen() {
               <Ionicons name="information-circle" size={20} color="#6b7280" />
             </View>
             <Text style={styles.webNoticeText}>
-              Full camera and location features available on mobile devices. Web version uses demo mode.
+              Full camera, location, and AI analysis features available on mobile devices. Web version uses demo mode.
             </Text>
           </View>
         )}
@@ -644,7 +726,7 @@ const createStyles = (theme: any) =>
       textAlign: 'center',
     },
 
-    // Latest Report Card
+    // Enhanced Latest Report Card with Analysis
     latestReportCard: {
       backgroundColor: theme.card,
       borderRadius: 20,
@@ -702,8 +784,50 @@ const createStyles = (theme: any) =>
       color: '#f59e0b',
       fontWeight: '600',
     },
+    
+    // Analysis Preview Section
+    analysisPreview: {
+      backgroundColor: '#8b5cf6' + '10',
+      borderRadius: 12,
+      padding: 12,
+      marginTop: 8,
+      borderWidth: 1,
+      borderColor: '#8b5cf6' + '20',
+    },
+    analysisHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+      gap: 6,
+    },
+    analysisTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#8b5cf6',
+    },
+    analysisContent: {
+      gap: 4,
+      marginBottom: 8,
+    },
+    analysisDetail: {
+      fontSize: 12,
+      color: theme.text,
+      fontWeight: '500',
+    },
+    viewFullAnalysisButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 6,
+      gap: 4,
+    },
+    viewFullAnalysisText: {
+      fontSize: 12,
+      color: '#8b5cf6',
+      fontWeight: '600',
+    },
 
-    // Enhanced Primary Report Button
+    // Enhanced Primary Report Button with AI Badge
     primaryActionSection: {
       paddingHorizontal: 20,
       marginBottom: 32,
@@ -716,16 +840,36 @@ const createStyles = (theme: any) =>
       shadowOpacity: 0.3,
       shadowRadius: 16,
       elevation: 8,
+      position: 'relative',
     },
     reportButtonGradient: {
       backgroundColor: '#dc2626',
       paddingVertical: 24,
       paddingHorizontal: 24,
     },
+    aiPoweredBadge: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      gap: 4,
+      zIndex: 1,
+    },
+    aiPoweredText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: '#ffffff',
+    },
     reportButtonContent: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 16,
+      marginTop: 16,
     },
     reportButtonIcon: {
       width: 56,

@@ -19,10 +19,18 @@ export default function CustomHeader({
   showProfile = true 
 }: HeaderProps) {
   const { theme, isDark } = useTheme();
-  const { notifications } = useData();
+  const { notifications, isOnline, syncWithBackend } = useData();
   
   // Get unread notification count from real data
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleSyncPress = async () => {
+    try {
+      await syncWithBackend();
+    } catch (error) {
+      console.log('Manual sync failed:', error);
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -31,7 +39,7 @@ export default function CustomHeader({
         backgroundColor={theme.background}
       />
       
-      {/* Left: App Name with Icon */}
+      {/* Left: App Name with Icon + Network Status */}
       <View style={styles.leftSection}>
         <Ionicons 
           name="leaf-outline" 
@@ -39,13 +47,34 @@ export default function CustomHeader({
           color={theme.primary} 
           style={styles.appIcon}
         />
-        <Text style={[styles.appTitle, { color: theme.primary }]}>
-          {title}
-        </Text>
+        <View style={styles.titleSection}>
+          <Text style={[styles.appTitle, { color: theme.primary }]}>
+            {title}
+          </Text>
+          {!isOnline && (
+            <Text style={styles.offlineIndicator}>
+              Offline Mode
+            </Text>
+          )}
+        </View>
       </View>
 
-      {/* Right: Action Icons */}
+      {/* Right: Action Icons + Sync Button */}
       <View style={styles.rightSection}>
+        {!isOnline && (
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={handleSyncPress}
+            accessibilityLabel="Sync with server"
+          >
+            <Ionicons 
+              name="sync-outline" 
+              size={22} 
+              color="#f59e0b" 
+            />
+          </TouchableOpacity>
+        )}
+
         {showSearch && (
           <TouchableOpacity 
             style={styles.iconButton}
@@ -94,6 +123,12 @@ export default function CustomHeader({
             />
           </TouchableOpacity>
         )}
+
+        {isOnline && (
+          <View style={styles.onlineIndicator}>
+            <View style={styles.onlineDot} />
+          </View>
+        )}
       </View>
     </View>
   );
@@ -122,10 +157,19 @@ const styles = StyleSheet.create({
   appIcon: {
     marginRight: 8,
   },
+  titleSection: {
+    flex: 1,
+  },
   appTitle: {
     fontSize: 20,
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+  offlineIndicator: {
+    fontSize: 10,
+    color: '#f59e0b',
+    fontWeight: '500',
+    marginTop: 1,
   },
   rightSection: {
     flexDirection: 'row',
@@ -157,5 +201,14 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontWeight: '600',
+  },
+  onlineIndicator: {
+    marginLeft: 8,
+  },
+  onlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10b981',
   },
 });

@@ -11,10 +11,6 @@ export default function ReportsScreen() {
   const styles = createStyles(theme);
   const [activeFilter, setActiveFilter] = useState('all');
 
-  // Debug logs
-  console.log('Reports screen - User:', user);
-  console.log('Reports screen - Reports:', reports);
-
   const filters = [
     { key: 'all', label: 'All', count: reports.length },
     { key: 'pending', label: 'Pending', count: reports.filter(r => r.status === 'pending').length },
@@ -41,6 +37,17 @@ export default function ReportsScreen() {
       case 'in-progress': return 'time';
       case 'pending': return 'hourglass';
       default: return 'help-circle';
+    }
+  };
+
+  const getSeverityColor = (severity?: string) => {
+    if (!severity) return theme.textSecondary;
+    switch (severity.toLowerCase()) {
+      case 'severe': return '#dc2626';
+      case 'high': return '#f59e0b';
+      case 'medium': return '#3b82f6';
+      case 'low': return '#10b981';
+      default: return theme.textSecondary;
     }
   };
 
@@ -95,13 +102,40 @@ export default function ReportsScreen() {
   };
 
   const showReportDetails = (report: any) => {
+    let details = `📋 Report Details:\n\n` +
+      `🗑️ Type: ${report.type}\n` +
+      `📍 Location: ${report.location}\n` +
+      `📝 Description: ${report.description}\n` +
+      `📅 Date: ${report.date}\n` +
+      `⏰ Time: ${report.time}\n` +
+      `📊 Status: ${report.status}`;
+
+    if (report.assignedTo) {
+      details += `\n👷 Assigned: ${report.assignedTo}`;
+    }
+    
+    if (report.completedDate) {
+      details += `\n✅ Completed: ${report.completedDate}`;
+    }
+
+    // Add analysis details if available
+    if (report.analysis) {
+      details += `\n\n🔬 AI Analysis:\n` +
+        `• Waste Type: ${report.analysis.wasteType}\n` +
+        `• Urgency: ${report.analysis.urgency}\n` +
+        `• Severity: ${report.analysis.severity}\n` +
+        `• Segregation: ${report.analysis.segregationLevel}\n\n` +
+        `📝 Analysis Details:\n${report.analysis.reasoning}`;
+
+      if (report.analysis.segregationReasoning) {
+        details += `\n\n♻️ Segregation Notes:\n${report.analysis.segregationReasoning}`;
+      }
+    }
+
     if (Platform.OS === 'web') {
-      alert(`📋 Report Details:\n\n🗑️ Type: ${report.type}\n📍 Location: ${report.location}\n📝 Description: ${report.description}\n📅 Date: ${report.date}\n⏰ Time: ${report.time}\n📊 Status: ${report.status}\n${report.assignedTo ? `👷 Assigned: ${report.assignedTo}` : ''}\n${report.completedDate ? `✅ Completed: ${report.completedDate}` : ''}`);
+      alert(details);
     } else {
-      Alert.alert(
-        'Report Details',
-        `Type: ${report.type}\nLocation: ${report.location}\nDescription: ${report.description}\nDate: ${report.date} at ${report.time}\nStatus: ${report.status}${report.assignedTo ? `\nAssigned: ${report.assignedTo}` : ''}${report.completedDate ? `\nCompleted: ${report.completedDate}` : ''}`
-      );
+      Alert.alert('Report Details', details);
     }
   };
 
@@ -113,7 +147,7 @@ export default function ReportsScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>My Reports</Text>
-          <Text style={styles.subtitle}>Track your waste reports</Text>
+          <Text style={styles.subtitle}>Track your waste reports & analysis</Text>
         </View>
 
         <View style={styles.content}>
@@ -157,7 +191,7 @@ export default function ReportsScreen() {
           <View style={styles.reportsSection}>
             {filteredReports.length > 0 ? (
               filteredReports
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) // Sort by newest first
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                 .map((report) => (
                 <TouchableOpacity 
                   key={report.id} 
@@ -180,6 +214,45 @@ export default function ReportsScreen() {
                   <Text style={styles.reportDescription} numberOfLines={2}>
                     {report.description}
                   </Text>
+
+                  {/* Analysis Section */}
+                  {report.analysis && (
+                    <View style={styles.analysisSection}>
+                      <View style={styles.analysisHeader}>
+                        <Ionicons name="analytics" size={16} color={theme.primary} />
+                        <Text style={styles.analysisTitle}>AI Analysis</Text>
+                      </View>
+                      
+                      <View style={styles.analysisContent}>
+                        <View style={styles.analysisRow}>
+                          <Text style={styles.analysisLabel}>Waste Type:</Text>
+                          <Text style={styles.analysisValue}>{report.analysis.wasteType}</Text>
+                        </View>
+                        
+                        <View style={styles.analysisRow}>
+                          <Text style={styles.analysisLabel}>Severity:</Text>
+                          <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(report.analysis.severity) + '20' }]}>
+                            <Text style={[styles.severityText, { color: getSeverityColor(report.analysis.severity) }]}>
+                              {report.analysis.severity}
+                            </Text>
+                          </View>
+                        </View>
+                        
+                        <View style={styles.analysisRow}>
+                          <Text style={styles.analysisLabel}>Urgency:</Text>
+                          <Text style={[styles.analysisValue, { color: theme.warning }]}>{report.analysis.urgency}</Text>
+                        </View>
+                      </View>
+                      
+                      <TouchableOpacity 
+                        style={styles.viewAnalysisButton}
+                        onPress={() => showReportDetails(report)}
+                      >
+                        <Text style={styles.viewAnalysisText}>View Full Analysis</Text>
+                        <Ionicons name="chevron-forward" size={16} color={theme.primary} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
 
                   <View style={styles.reportFooter}>
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(report.status) + '20' }]}>
@@ -237,7 +310,6 @@ export default function ReportsScreen() {
                   <TouchableOpacity 
                     style={styles.emptyButton}
                     onPress={() => {
-                      // Navigate to home tab (you might need to import navigation)
                       if (Platform.OS === 'web') {
                         alert('📱 Go to the Home tab and click "Submit Waste Report" to create your first report!');
                       } else {
@@ -271,18 +343,11 @@ export default function ReportsScreen() {
                   <Text style={styles.summaryLabel}>Completed</Text>
                 </View>
                 <View style={styles.summaryCard}>
-                  <Ionicons name="time" size={24} color={theme.warning} />
-                  <Text style={[styles.summaryNumber, { color: theme.warning }]}>
-                    {reports.filter(r => r.status === 'in-progress').length}
+                  <Ionicons name="analytics" size={24} color="#8b5cf6" />
+                  <Text style={[styles.summaryNumber, { color: "#8b5cf6" }]}>
+                    {reports.filter(r => r.analysis).length}
                   </Text>
-                  <Text style={styles.summaryLabel}>In Progress</Text>
-                </View>
-                <View style={styles.summaryCard}>
-                  <Ionicons name="hourglass" size={24} color={theme.textSecondary} />
-                  <Text style={[styles.summaryNumber, { color: theme.textSecondary }]}>
-                    {reports.filter(r => r.status === 'pending').length}
-                  </Text>
-                  <Text style={styles.summaryLabel}>Pending</Text>
+                  <Text style={styles.summaryLabel}>Analyzed</Text>
                 </View>
               </View>
             </View>
@@ -301,7 +366,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   header: {
     paddingTop: 20,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 30,
     backgroundColor: theme.surface,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
@@ -310,31 +375,30 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: theme.text,
-    textAlign: 'center',
     marginBottom: 5,
   },
   subtitle: {
     fontSize: 14,
     color: theme.textSecondary,
-    textAlign: 'center',
   },
   content: {
-    paddingBottom: 100,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   filterContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    marginBottom: 20,
   },
   filterTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.surface,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
+    marginRight: 12,
     borderRadius: 20,
-    marginRight: 10,
+    backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.border,
+    gap: 8,
   },
   activeFilterTab: {
     backgroundColor: theme.primary,
@@ -343,14 +407,13 @@ const createStyles = (theme: any) => StyleSheet.create({
   filterTabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: theme.textSecondary,
-    marginRight: 8,
+    color: theme.text,
   },
   activeFilterTabText: {
     color: '#ffffff',
   },
   filterBadge: {
-    backgroundColor: theme.border,
+    backgroundColor: theme.textSecondary + '20',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -358,7 +421,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     alignItems: 'center',
   },
   activeFilterBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   filterBadgeText: {
     fontSize: 12,
@@ -369,21 +432,22 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: '#ffffff',
   },
   reportsSection: {
-    paddingHorizontal: 20,
+    marginBottom: 20,
   },
   reportCard: {
     backgroundColor: theme.card,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
   },
   reportHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
   reportInfo: {
@@ -397,9 +461,9 @@ const createStyles = (theme: any) => StyleSheet.create({
     marginBottom: 4,
   },
   reportLocation: {
-    fontSize: 13,
+    fontSize: 12,
     color: theme.textSecondary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   reportDate: {
     fontSize: 12,
@@ -414,6 +478,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+    resizeMode: 'cover',
   },
   reportDescription: {
     fontSize: 14,
@@ -421,11 +486,75 @@ const createStyles = (theme: any) => StyleSheet.create({
     lineHeight: 20,
     marginBottom: 12,
   },
+  
+  // Analysis Section Styles
+  analysisSection: {
+    backgroundColor: theme.primary + '10',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.primary + '20',
+  },
+  analysisHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 6,
+  },
+  analysisTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.primary,
+  },
+  analysisContent: {
+    gap: 6,
+    marginBottom: 8,
+  },
+  analysisRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  analysisLabel: {
+    fontSize: 12,
+    color: theme.textSecondary,
+    fontWeight: '500',
+  },
+  analysisValue: {
+    fontSize: 12,
+    color: theme.text,
+    fontWeight: '600',
+    maxWidth: 150,
+    textAlign: 'right',
+  },
+  severityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  severityText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  viewAnalysisButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    gap: 4,
+  },
+  viewAnalysisText: {
+    fontSize: 12,
+    color: theme.primary,
+    fontWeight: '600',
+  },
+  
   reportFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginTop: 8,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -433,11 +562,11 @@ const createStyles = (theme: any) => StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    gap: 4,
   },
   statusText: {
     fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
+    fontWeight: '500',
   },
   actionIcon: {
     padding: 4,
@@ -445,35 +574,35 @@ const createStyles = (theme: any) => StyleSheet.create({
   assignedInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.warning + '20',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 4,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    gap: 6,
   },
   assignedText: {
-    fontSize: 11,
+    fontSize: 12,
     color: theme.warning,
     fontWeight: '500',
-    marginLeft: 4,
   },
   completedInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.success + '20',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    gap: 6,
   },
   completedText: {
-    fontSize: 11,
+    fontSize: 12,
     color: theme.success,
     fontWeight: '500',
-    marginLeft: 4,
   },
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
+    paddingHorizontal: 20,
   },
   emptyTitle: {
     fontSize: 18,
@@ -486,9 +615,8 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontSize: 14,
     color: theme.textSecondary,
     textAlign: 'center',
-    paddingHorizontal: 40,
     lineHeight: 20,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   emptyButton: {
     flexDirection: 'row',
@@ -496,22 +624,21 @@ const createStyles = (theme: any) => StyleSheet.create({
     backgroundColor: theme.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
+    gap: 8,
   },
   emptyButtonText: {
     color: '#ffffff',
     fontWeight: '600',
-    marginLeft: 8,
   },
   summarySection: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: theme.text,
-    marginBottom: 15,
+    marginBottom: 12,
   },
   summaryGrid: {
     flexDirection: 'row',
@@ -526,18 +653,18 @@ const createStyles = (theme: any) => StyleSheet.create({
     shadowColor: theme.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 2,
     elevation: 2,
   },
   summaryNumber: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: theme.text,
     marginTop: 8,
     marginBottom: 4,
   },
   summaryLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: theme.textSecondary,
     textAlign: 'center',
   },
