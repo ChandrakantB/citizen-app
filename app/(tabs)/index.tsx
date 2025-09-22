@@ -11,7 +11,7 @@ import {
   ScrollView,
   Dimensions,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import React, { useState } from "react";
@@ -19,6 +19,8 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { useData } from "../../contexts/DataContext";
 import EducationalContent from "../../components/EducationalContent";
 import NearbyFacilitiesMap from "../../components/NearbyFacilitiesMap";
+import { AIAnalysisModal } from "../../components/AIAnalysisModal";
+import { router } from "expo-router";
 
 const { width } = Dimensions.get('window');
 
@@ -27,19 +29,23 @@ export default function HomeScreen() {
   const { user, submitReport } = useData();
   const styles = createStyles(theme);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [reportLocation, setReportLocation] = useState<string>(
-    "Location detecting..."
-  );
+  const [reportLocation, setReportLocation] = useState<string>("Location detecting...");
   const [showEducationalContent, setShowEducationalContent] = useState(false);
   const [showNearbyFacilities, setShowNearbyFacilities] = useState(false);
   const [lastAnalysis, setLastAnalysis] = useState<any>(null);
   
-  // Debug logs
+  // ✅ AI Analysis Modal State
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [analysisState, setAnalysisState] = useState({
+    isAnalyzing: false,
+    progress: 0,
+    analysis: null,
+    reportType: '',
+    location: '',
+  });
+
   console.log("Home screen render - User:", user);
-  console.log(
-    "Home screen render - submitReport function:",
-    typeof submitReport
-  );
+  console.log("Home screen render - submitReport function:", typeof submitReport);
 
   const getCurrentLocation = async () => {
     try {
@@ -56,13 +62,9 @@ export default function HomeScreen() {
 
       if (address[0]) {
         const addr = address[0];
-        return `${addr.street || ""} ${addr.city || ""} ${
-          addr.region || ""
-        }`.trim();
+        return `${addr.street || ""} ${addr.city || ""} ${addr.region || ""}`.trim();
       }
-      return `${location.coords.latitude.toFixed(
-        4
-      )}, ${location.coords.longitude.toFixed(4)}`;
+      return `${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)}`;
     } catch (error) {
       console.log("Location error:", error);
       return "Location unavailable";
@@ -71,26 +73,18 @@ export default function HomeScreen() {
 
   const takePhoto = async () => {
     console.log("takePhoto called");
-    console.log("Platform.OS check:", Platform.OS === "web");
 
     if (Platform.OS === "web") {
-      console.log("Web mode detected, showing demo");
-      const demoImage =
-        "https://via.placeholder.com/300x200/dc2626/ffffff?text=Camera+Demo+Report";
+      const demoImage = "https://via.placeholder.com/300x200/dc2626/ffffff?text=Camera+Demo+Report";
       setSelectedImage(demoImage);
       setReportLocation("Demo Location - Camera, Web Browser");
-
-      console.log("Calling showReportDialog from camera");
       showReportDialog(demoImage, "Demo Location - Camera, Web Browser");
       return;
     }
 
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(
-        "Permission needed",
-        "Camera access is required to report waste"
-      );
+      Alert.alert("Permission needed", "Camera access is required to report waste");
       return;
     }
 
@@ -104,7 +98,6 @@ export default function HomeScreen() {
       setSelectedImage(result.assets[0].uri);
       const location = await getCurrentLocation();
       setReportLocation(location);
-
       showReportDialog(result.assets[0].uri, location);
     }
   };
@@ -113,23 +106,16 @@ export default function HomeScreen() {
     console.log("selectFromGallery called");
 
     if (Platform.OS === "web") {
-      console.log("Web gallery mode detected");
-      const demoImage =
-        "https://via.placeholder.com/300x200/22c55e/ffffff?text=Gallery+Demo+Report";
+      const demoImage = "https://via.placeholder.com/300x200/22c55e/ffffff?text=Gallery+Demo+Report";
       setSelectedImage(demoImage);
       setReportLocation("Demo Location - Gallery, Web Browser");
-
-      console.log("Calling showReportDialog from gallery");
       showReportDialog(demoImage, "Demo Location - Gallery, Web Browser");
       return;
     }
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(
-        "Permission needed",
-        "Gallery access is required to select photos"
-      );
+      Alert.alert("Permission needed", "Gallery access is required to select photos");
       return;
     }
 
@@ -143,7 +129,6 @@ export default function HomeScreen() {
       setSelectedImage(result.assets[0].uri);
       const location = await getCurrentLocation();
       setReportLocation(location);
-
       showReportDialog(result.assets[0].uri, location);
     }
   };
@@ -152,13 +137,7 @@ export default function HomeScreen() {
     console.log("showReportDialog called with:", { photoUri, location });
 
     if (Platform.OS === "web") {
-      // Use browser prompt for web
-      const wasteTypes = [
-        "General Waste",
-        "Medical Waste",
-        "Electronic Waste",
-        "Construction Debris",
-      ];
+      const wasteTypes = ["General Waste", "Medical Waste", "Electronic Waste", "Construction Debris"];
       const choice = prompt(
         `Location: ${location}\n\nChoose waste type:\n\n1. General Waste\n2. Medical Waste\n3. Electronic Waste\n4. Construction Debris\n\nEnter number (1-4):`
       );
@@ -173,61 +152,43 @@ export default function HomeScreen() {
           "Construction materials blocking area",
         ];
 
-        console.log(`${selectedType} selected`);
-        submitWasteReport(
-          photoUri,
-          location,
-          selectedType,
-          descriptions[typeIndex]
-        );
+        console.log(`${selectedType} selected - will show MODAL`);
+        submitWasteReport(photoUri, location, selectedType, descriptions[typeIndex]);
       } else if (choice !== null) {
         alert("Invalid selection. Please try again.");
       }
     } else {
-      // Use Alert.alert for mobile
       Alert.alert(
         "Submit Waste Report",
         `Location: ${location}\n\nChoose waste type:`,
         [
           {
             text: "General Waste",
-            onPress: () =>
-              submitWasteReport(
-                photoUri,
-                location,
-                "General Waste",
-                "Mixed waste requiring pickup"
-              ),
+            onPress: () => {
+              console.log("General Waste selected - will show MODAL");
+              submitWasteReport(photoUri, location, "General Waste", "Mixed waste requiring pickup");
+            },
           },
           {
             text: "Medical Waste",
-            onPress: () =>
-              submitWasteReport(
-                photoUri,
-                location,
-                "Medical Waste",
-                "Medical waste requiring special handling"
-              ),
+            onPress: () => {
+              console.log("Medical Waste selected - will show MODAL");
+              submitWasteReport(photoUri, location, "Medical Waste", "Medical waste requiring special handling");
+            },
           },
           {
             text: "Electronic Waste",
-            onPress: () =>
-              submitWasteReport(
-                photoUri,
-                location,
-                "Electronic Waste",
-                "Electronic items for proper disposal"
-              ),
+            onPress: () => {
+              console.log("Electronic Waste selected - will show MODAL");
+              submitWasteReport(photoUri, location, "Electronic Waste", "Electronic items for proper disposal");
+            },
           },
           {
             text: "Construction Debris",
-            onPress: () =>
-              submitWasteReport(
-                photoUri,
-                location,
-                "Construction Debris",
-                "Construction materials blocking area"
-              ),
+            onPress: () => {
+              console.log("Construction Debris selected - will show MODAL");
+              submitWasteReport(photoUri, location, "Construction Debris", "Construction materials blocking area");
+            },
           },
           { text: "Cancel", style: "cancel" },
         ]
@@ -235,32 +196,39 @@ export default function HomeScreen() {
     }
   };
 
+  // ✅ UPDATED: Beautiful AI Analysis with Modal (NO ALERTS)
   const submitWasteReport = async (
     photoUri: string,
     location: string,
     type: string,
     description: string
   ) => {
-    console.log("submitWasteReport called with:", {
-      photoUri,
-      location,
-      type,
-      description,
+    console.log("🚀 submitWasteReport started - MODAL VERSION");
+
+    // ✅ Show beautiful AI analysis modal IMMEDIATELY
+    setAnalysisState({
+      isAnalyzing: true,
+      progress: 0,
+      analysis: null,
+      reportType: type,
+      location: location,
     });
-    console.log("Current user before submit:", user);
+    setShowAnalysisModal(true);
+    
+    console.log("🎨 Modal should be visible now");
+
+    // ✅ Simulate realistic progress updates
+    const progressInterval = setInterval(() => {
+      setAnalysisState(prev => ({
+        ...prev,
+        progress: Math.min(prev.progress + Math.random() * 15, 95)
+      }));
+    }, 800);
 
     try {
-      console.log("About to call submitReport with analysis...");
-      
-      // Show loading state
-      if (Platform.OS === "web") {
-        // Can't show loading for web prompts, but we can console log
-        console.log("🔍 Analyzing waste and submitting report...");
-      } else {
-        Alert.alert("Processing...", "Analyzing waste and submitting report...");
-      }
-      
-      // Submit report and get analysis
+      const startTime = Date.now();
+
+      // Submit report with AI analysis
       const result = await submitReport({
         type,
         location,
@@ -268,79 +236,58 @@ export default function HomeScreen() {
         photoUri,
       });
 
-      console.log("submitReport completed successfully", result);
+      // Clear progress interval
+      clearInterval(progressInterval);
 
-      // Store the analysis for display
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`✅ Total process completed in ${totalTime}s:`, result);
+
+      // Store analysis for preview
       if (result.analysis) {
         setLastAnalysis(result.analysis);
       }
 
-      // Show success with analysis if available
-      if (result.analysis) {
-        const analysisText = `🎯 AI Analysis Results:\n\n` +
-          `🗑️ Waste Type: ${result.analysis.wasteType}\n` +
-          `⚡ Urgency: ${result.analysis.urgency}\n` +
-          `🔴 Severity: ${result.analysis.severity}\n` +
-          `♻️ Segregation: ${result.analysis.segregationLevel}\n\n` +
-          `📝 Analysis Details:\n${result.analysis.reasoning}\n\n` +
-          `✅ Report submitted successfully!\n🏆 You earned 10 green coins!`;
+      // ✅ Update modal to show beautiful results (NO ALERTS!)
+      setAnalysisState(prev => ({
+        ...prev,
+        isAnalyzing: false,
+        progress: 100,
+        analysis: result.analysis,
+      }));
 
-        if (Platform.OS === "web") {
-          alert(analysisText);
-        } else {
-          Alert.alert("Report Submitted with AI Analysis!", analysisText, [
-            { 
-              text: "View in Reports", 
-              onPress: () => {
-                // Navigate to reports tab if navigation is available
-                console.log("Navigate to reports tab");
-              }
-            },
-            { text: "OK" }
-          ]);
-        }
-      } else {
-        // Fallback message without analysis
-        const successText = `Your ${type.toLowerCase()} report has been submitted successfully.\n\n🏆 You earned 10 green coins!\n\n⚠️ AI analysis was unavailable, but your report is being processed.`;
-        
-        if (Platform.OS === "web") {
-          alert(`Report Submitted!\n\n${successText}\n\nCheck your reports tab for updates.`);
-        } else {
-          Alert.alert("Report Submitted!", successText, [{ text: "OK" }]);
-        }
-      }
+      console.log("🎉 Modal updated with results - no alerts should show");
+
     } catch (error) {
-      console.log("submitWasteReport error:", error);
+      console.log("❌ submitWasteReport error:", error);
+      
+      // Clear progress interval
+      clearInterval(progressInterval);
 
-      // Hide loading and show error
-      const errorMessage = "Failed to submit report. Please try again.\n\nNote: Analysis requires internet connection.";
+      // ✅ Show error state in modal (NO ALERTS!)
+      setAnalysisState(prev => ({
+        ...prev,
+        isAnalyzing: false,
+        progress: 100,
+        analysis: null,
+      }));
 
-      if (Platform.OS === "web") {
-        alert(`Error: ${errorMessage}`);
-      } else {
-        Alert.alert("Error", errorMessage);
-      }
+      console.log("⚠️ Modal updated with error state - no alerts should show");
     }
   };
 
   const showPhotoOptions = () => {
     console.log("showPhotoOptions called");
-    console.log("Platform.OS:", Platform.OS);
 
     if (Platform.OS === "web") {
-      // Use browser confirm for web
       const choice = confirm(
         "Choose photo source:\n\nOK = Take Photo (Demo)\nCancel = Choose from Gallery (Demo)"
       );
       if (choice) {
-        console.log("Take Photo selected");
         takePhoto();
       } else {
-        console.log("Gallery selected");
         selectFromGallery();
       }
     } else {
-      // Use Alert.alert for mobile
       Alert.alert("Report Waste", "How would you like to add a photo?", [
         { text: "Take Photo", onPress: () => takePhoto() },
         { text: "Choose from Gallery", onPress: () => selectFromGallery() },
@@ -390,36 +337,30 @@ export default function HomeScreen() {
             <Image source={{ uri: selectedImage }} style={styles.reportImage} />
             <View style={styles.reportDetails}>
               <Text style={styles.reportLocation}>{reportLocation}</Text>
-              <Text style={styles.pointsEarned}>+10 Green Coins Earned! 🏆</Text>
+              <Text style={styles.pointsEarned}>+{lastAnalysis ? 15 : 10} Green Coins Earned! 🏆</Text>
               
               {lastAnalysis && (
                 <View style={styles.analysisPreview}>
                   <View style={styles.analysisHeader}>
                     <Ionicons name="analytics" size={16} color="#8b5cf6" />
-                    <Text style={styles.analysisTitle}>AI Analysis</Text>
+                    <Text style={styles.analysisTitle}>AI Analysis Complete!</Text>
                   </View>
                   <View style={styles.analysisContent}>
-                    <Text style={styles.analysisDetail}>
-                      🗑️ Type: {lastAnalysis.wasteType}
-                    </Text>
-                    <Text style={styles.analysisDetail}>
-                      🔴 Severity: {lastAnalysis.severity}
-                    </Text>
-                    <Text style={styles.analysisDetail}>
-                      ⚡ Urgency: {lastAnalysis.urgency}
-                    </Text>
+                    <Text style={styles.analysisDetail}>🗑️ Type: {lastAnalysis.wasteType}</Text>
+                    <Text style={styles.analysisDetail}>🔴 Severity: {lastAnalysis.severity}</Text>
+                    <Text style={styles.analysisDetail}>⚡ Urgency: {lastAnalysis.urgency}</Text>
                   </View>
                   <TouchableOpacity 
                     style={styles.viewFullAnalysisButton}
                     onPress={() => {
-                      if (Platform.OS === "web") {
-                        alert(`Full AI Analysis:\n\n${lastAnalysis.reasoning}\n\nSegregation: ${lastAnalysis.segregationReasoning || 'N/A'}`);
-                      } else {
-                        Alert.alert(
-                          "Full AI Analysis", 
-                          `${lastAnalysis.reasoning}\n\nSegregation Notes:\n${lastAnalysis.segregationReasoning || 'No specific segregation notes available.'}`
-                        );
-                      }
+                      setAnalysisState({
+                        isAnalyzing: false,
+                        progress: 100,
+                        analysis: lastAnalysis,
+                        reportType: 'Previous Report',
+                        location: reportLocation,
+                      });
+                      setShowAnalysisModal(true);
                     }}
                   >
                     <Text style={styles.viewFullAnalysisText}>View Full Analysis</Text>
@@ -431,14 +372,56 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Enhanced Submit Report Button with AI Badge */}
+        {/* ✅ TEST BUTTON - Remove this after testing */}
+        {__DEV__ && (
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#FF6B6B',
+              margin: 20,
+              padding: 15,
+              borderRadius: 10,
+              alignItems: 'center'
+            }}
+            onPress={() => {
+              console.log("🧪 Testing modal directly");
+              setAnalysisState({
+                isAnalyzing: true,
+                progress: 45,
+                analysis: null,
+                reportType: 'Test Waste',
+                location: 'Test Location',
+              });
+              setShowAnalysisModal(true);
+              
+              // Simulate completion after 3 seconds
+              setTimeout(() => {
+                setAnalysisState(prev => ({
+                  ...prev,
+                  isAnalyzing: false,
+                  progress: 100,
+                  analysis: {
+                    wasteType: 'Test plastic waste',
+                    urgency: 'High',
+                    severity: 'Moderate',
+                    reasoning: 'This is a test analysis for modal verification.',
+                    segregationLevel: 'Mixed',
+                    segregationReasoning: 'Test segregation advice.',
+                    id: 'test-123',
+                    createdAt: new Date().toISOString()
+                  },
+                }));
+              }, 3000);
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>🧪 TEST MODAL</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Enhanced Submit Report Button */}
         <View style={styles.primaryActionSection}>
           <TouchableOpacity
             style={styles.primaryReportButton}
-            onPress={() => {
-              console.log("Primary report button clicked!");
-              showPhotoOptions();
-            }}
+            onPress={showPhotoOptions}
             activeOpacity={0.8}
           >
             <View style={styles.reportButtonGradient}>
@@ -471,14 +454,9 @@ export default function HomeScreen() {
               style={[styles.actionCard, styles.actionCardPrimary]}
               onPress={() => {
                 if (Platform.OS === "web") {
-                  alert(
-                    "Find Bins feature coming soon!\n\nThis will show nearby waste bins on a map."
-                  );
+                  alert("Find Bins feature coming soon!");
                 } else {
-                  Alert.alert(
-                    "Find Bins",
-                    "This feature will show nearby waste bins on a map."
-                  );
+                  Alert.alert("Find Bins", "This feature will show nearby waste bins on a map.");
                 }
               }}
             >
@@ -492,15 +470,21 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={[styles.actionCard, styles.actionCardSecondary]}
               onPress={() => {
-                if (Platform.OS === "web") {
-                  alert(
-                    "Check the Reports tab to track your submitted reports status and view AI analysis!"
-                  );
+                if (lastAnalysis) {
+                  setAnalysisState({
+                    isAnalyzing: false,
+                    progress: 100,
+                    analysis: lastAnalysis,
+                    reportType: 'Recent Report',
+                    location: reportLocation,
+                  });
+                  setShowAnalysisModal(true);
                 } else {
-                  Alert.alert(
-                    "Track Status",
-                    "Check the Reports tab to track your submitted reports and view AI analysis."
-                  );
+                  if (Platform.OS === "web") {
+                    alert("Submit a report first to see AI analysis!");
+                  } else {
+                    Alert.alert("AI Analysis", "Submit a report first to see AI analysis!");
+                  }
                 }
               }}
             >
@@ -544,36 +528,42 @@ export default function HomeScreen() {
             </View>
           </TouchableOpacity>
 
+          {/* ✅ NEW: GreenMitra Chatbot Card */}
           <TouchableOpacity
             style={styles.fullWidthActionCard}
             onPress={() => {
-              if (Platform.OS === "web") {
-                alert(
-                  `Your Current Rewards:\n\nPoints: ${
-                    user?.points || 0
-                  }\nReports: ${user?.reportsSubmitted || 0}\nLevel: ${
-                    user?.level || "New User"
-                  }\n\nKeep reporting to earn more rewards!`
-                );
-              } else {
-                Alert.alert(
-                  "Your Rewards",
-                  `Points: ${user?.points || 0}\nReports: ${
-                    user?.reportsSubmitted || 0
-                  }\nLevel: ${user?.level || "New User"}`
-                );
-              }
+              // Navigate to GreenMitra tab
+              router.push('/(tabs)/greenmitra');
             }}
           >
             <View style={styles.fullActionContent}>
               <View style={[styles.actionIconContainer, { backgroundColor: "#10b981" + "20" }]}>
-                <Ionicons name="trophy" size={24} color="#10b981" />
+                <Ionicons name="leaf" size={24} color="#10b981" />
               </View>
               <View style={styles.fullActionText}>
-                <Text style={[styles.actionTitle, { color: "#10b981" }]}>Rewards & Achievements</Text>
-                <Text style={styles.actionSubtitle}>View your eco-impact & badges</Text>
+                <Text style={[styles.actionTitle, { color: "#10b981" }]}>🌱 GreenMitra Chatbot</Text>
+                <Text style={styles.actionSubtitle}>AI waste classification assistant</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#10b981" />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.fullWidthActionCard}
+            onPress={() => {
+              // Navigate to services tab for more tools
+              router.push('/(tabs)/services');
+            }}
+          >
+            <View style={styles.fullActionContent}>
+              <View style={[styles.actionIconContainer, { backgroundColor: "#f59e0b" + "20" }]}>
+                <Ionicons name="construct" size={24} color="#f59e0b" />
+              </View>
+              <View style={styles.fullActionText}>
+                <Text style={[styles.actionTitle, { color: "#f59e0b" }]}>More Services</Text>
+                <Text style={styles.actionSubtitle}>Explore all waste management tools</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#f59e0b" />
             </View>
           </TouchableOpacity>
         </View>
@@ -607,11 +597,32 @@ export default function HomeScreen() {
                 <Ionicons name="analytics" size={24} color="#8b5cf6" />
               </View>
               <View style={styles.statContent}>
-                <Text style={styles.statNumber}>
-                  {user?.reportsSubmitted || 0}
-                </Text>
+                <Text style={styles.statNumber}>{user?.reportsSubmitted || 0}</Text>
                 <Text style={styles.statLabel}>AI Analyzed</Text>
               </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Quick Tips Section */}
+        <View style={styles.tipsSection}>
+          <Text style={styles.sectionTitle}>💡 Daily Eco Tips</Text>
+          <View style={styles.tipsContainer}>
+            <View style={styles.tipCard}>
+              <View style={styles.tipIcon}>
+                <Ionicons name="leaf" size={20} color="#10b981" />
+              </View>
+              <Text style={styles.tipText}>
+                Use GreenMitra chatbot to learn proper waste segregation for any item!
+              </Text>
+            </View>
+            <View style={styles.tipCard}>
+              <View style={styles.tipIcon}>
+                <Ionicons name="recycle" size={20} color="#3b82f6" />
+              </View>
+              <Text style={styles.tipText}>
+                Clean containers before disposal to ensure better recycling quality.
+              </Text>
             </View>
           </View>
         </View>
@@ -628,7 +639,18 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {/* Modals */}
+      {/* ✅ Beautiful AI Analysis Modal */}
+      <AIAnalysisModal
+        visible={showAnalysisModal}
+        onClose={() => setShowAnalysisModal(false)}
+        analysis={analysisState.analysis}
+        isAnalyzing={analysisState.isAnalyzing}
+        progress={analysisState.progress}
+        reportType={analysisState.reportType}
+        location={analysisState.location}
+      />
+
+      {/* Existing Modals */}
       <EducationalContent 
         visible={showEducationalContent}
         onClose={() => setShowEducationalContent(false)}
@@ -827,7 +849,7 @@ const createStyles = (theme: any) =>
       fontWeight: '600',
     },
 
-    // Enhanced Primary Report Button with AI Badge
+    // Enhanced Primary Report Button
     primaryActionSection: {
       paddingHorizontal: 20,
       marginBottom: 32,
@@ -902,7 +924,7 @@ const createStyles = (theme: any) =>
       alignItems: 'center',
     },
 
-    // Enhanced Quick Actions
+    // Quick Actions
     quickActionsSection: {
       paddingHorizontal: 20,
       marginBottom: 32,
@@ -978,7 +1000,7 @@ const createStyles = (theme: any) =>
       flex: 1,
     },
 
-    // Enhanced Stats Section
+    // Stats Section
     statsSection: {
       paddingHorizontal: 20,
       marginBottom: 32,
@@ -1022,6 +1044,42 @@ const createStyles = (theme: any) =>
       color: theme.textSecondary,
       textAlign: 'center',
       fontWeight: '500',
+    },
+
+    // Tips Section
+    tipsSection: {
+      paddingHorizontal: 20,
+      marginBottom: 32,
+    },
+    tipsContainer: {
+      gap: 12,
+    },
+    tipCard: {
+      backgroundColor: theme.card,
+      borderRadius: 12,
+      padding: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      shadowColor: theme.shadow,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    tipIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: '#10b981' + '20',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+    },
+    tipText: {
+      flex: 1,
+      fontSize: 14,
+      color: theme.text,
+      lineHeight: 18,
     },
 
     // Web Notice

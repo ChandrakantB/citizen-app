@@ -54,11 +54,20 @@ export default function SignupScreen() {
     setLoading(true);
     
     try {
+      console.log('🔍 Signup form calling registerUser with:', {
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        phone: phone.trim(),
+        password: password ? '[PRESENT]' : '[MISSING]', // Debug log
+        passwordLength: password.length
+      });
+
+      // FIXED: Now passing the password correctly
       const success = await registerUser({
         name: name.trim(),
         email: email.toLowerCase().trim(),
         phone: phone.trim(),
-        level: 'New User',
+        password: password, // ✅ Added the missing password!
       });
 
       if (success) {
@@ -71,6 +80,7 @@ export default function SignupScreen() {
         Alert.alert('Error', 'An account with this email already exists. Please try logging in.');
       }
     } catch (error) {
+      console.log('❌ Signup error:', error);
       Alert.alert('Error', 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
@@ -208,17 +218,73 @@ export default function SignupScreen() {
             </View>
           </View>
 
+          {/* Password Strength Indicator */}
+          {formData.password.length > 0 && (
+            <View style={styles.passwordStrength}>
+              <View style={[
+                styles.strengthBar, 
+                { 
+                  backgroundColor: formData.password.length < 6 
+                    ? '#dc2626' 
+                    : formData.password.length < 8 
+                      ? '#f59e0b' 
+                      : '#10b981',
+                  width: `${Math.min(100, (formData.password.length / 8) * 100)}%`
+                }
+              ]} />
+              <Text style={[styles.strengthText, {
+                color: formData.password.length < 6 
+                  ? '#dc2626' 
+                  : formData.password.length < 8 
+                    ? '#f59e0b' 
+                    : '#10b981'
+              }]}>
+                {formData.password.length < 6 
+                  ? 'Weak' 
+                  : formData.password.length < 8 
+                    ? 'Good' 
+                    : 'Strong'
+                }
+              </Text>
+            </View>
+          )}
+
+          {/* Password Match Indicator */}
+          {formData.confirmPassword.length > 0 && (
+            <View style={styles.matchIndicator}>
+              <Ionicons 
+                name={formData.password === formData.confirmPassword ? "checkmark-circle" : "close-circle"} 
+                size={16} 
+                color={formData.password === formData.confirmPassword ? "#10b981" : "#dc2626"} 
+              />
+              <Text style={[styles.matchText, {
+                color: formData.password === formData.confirmPassword ? "#10b981" : "#dc2626"
+              }]}>
+                {formData.password === formData.confirmPassword ? "Passwords match" : "Passwords don't match"}
+              </Text>
+            </View>
+          )}
+
           <TouchableOpacity 
-            style={[styles.signupButton, loading && styles.signupButtonDisabled]}
+            style={[
+              styles.signupButton, 
+              loading && styles.signupButtonDisabled,
+              // Disable if passwords don't match
+              (formData.password !== formData.confirmPassword && formData.confirmPassword.length > 0) && styles.signupButtonDisabled
+            ]}
             onPress={handleSignup}
-            disabled={loading}
+            disabled={loading || (formData.password !== formData.confirmPassword && formData.confirmPassword.length > 0)}
           >
             {loading ? (
               <View style={styles.loadingContainer}>
+                <Ionicons name="reload" size={20} color="#ffffff" style={styles.loadingIcon} />
                 <Text style={styles.signupButtonText}>Creating Account...</Text>
               </View>
             ) : (
-              <Text style={styles.signupButtonText}>Create Account</Text>
+              <View style={styles.buttonContent}>
+                <Ionicons name="person-add" size={20} color="#ffffff" style={styles.buttonIcon} />
+                <Text style={styles.signupButtonText}>Create Account</Text>
+              </View>
             )}
           </TouchableOpacity>
 
@@ -230,6 +296,16 @@ export default function SignupScreen() {
             >
               <Text style={styles.loginLink}>Sign In</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Terms and Privacy */}
+          <View style={styles.termsSection}>
+            <Text style={styles.termsText}>
+              By creating an account, you agree to our{' '}
+              <Text style={styles.termsLink}>Terms of Service</Text>
+              {' '}and{' '}
+              <Text style={styles.termsLink}>Privacy Policy</Text>
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -253,6 +329,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   backButton: {
     marginBottom: 30,
+    padding: 5,
   },
   title: {
     fontSize: 32,
@@ -288,6 +365,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.border,
+    minHeight: 52,
   },
   inputIcon: {
     marginLeft: 15,
@@ -307,6 +385,37 @@ const createStyles = (theme: any) => StyleSheet.create({
     right: 15,
     padding: 5,
   },
+
+  // Password Strength Styles
+  passwordStrength: {
+    marginTop: -15,
+    marginBottom: 15,
+    height: 20,
+    justifyContent: 'center',
+  },
+  strengthBar: {
+    height: 3,
+    borderRadius: 2,
+    marginBottom: 5,
+  },
+  strengthText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
+  // Password Match Styles
+  matchIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: -15,
+    marginBottom: 15,
+    gap: 6,
+  },
+  matchText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
   signupButton: {
     backgroundColor: theme.primary,
     paddingVertical: 18,
@@ -319,6 +428,8 @@ const createStyles = (theme: any) => StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+    minHeight: 56,
+    justifyContent: 'center',
   },
   signupButtonDisabled: {
     backgroundColor: theme.textSecondary,
@@ -328,6 +439,18 @@ const createStyles = (theme: any) => StyleSheet.create({
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+  },
+  loadingIcon: {
+    // Add rotation animation if desired
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  buttonIcon: {
+    // Icon styling
   },
   signupButtonText: {
     color: '#ffffff',
@@ -338,7 +461,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 40,
+    marginBottom: 20,
   },
   loginText: {
     color: theme.textSecondary,
@@ -348,5 +471,19 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: theme.primary,
     fontSize: 16,
     fontWeight: '600',
+  },
+  termsSection: {
+    paddingBottom: 40,
+    paddingHorizontal: 10,
+  },
+  termsText: {
+    color: theme.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  termsLink: {
+    color: theme.primary,
+    fontWeight: '500',
   },
 });

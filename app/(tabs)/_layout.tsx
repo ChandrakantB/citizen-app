@@ -62,12 +62,13 @@ export default function RootLayout() {
             ),
           }}
         />
+        {/* ✅ REPLACED: Profile tab with GreenMitra tab */}
         <Tabs.Screen
-          name="profile"
+          name="greenmitra"
           options={{
-            title: 'Profile',
+            title: 'GreenMitra',
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="person" size={size} color={color} />
+              <Ionicons name="leaf" size={size} color={color} />
             ),
           }}
         />
