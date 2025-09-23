@@ -1,10 +1,29 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import CustomHeader from '../../components/CustomHeader';
 
 export default function RootLayout() {
   const { theme, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  
+  // ✅ Dynamic height based on device
+  const getTabBarHeight = () => {
+    if (Platform.OS === 'web') return 70;
+    
+    // Check if device has home indicator (iPhone X and newer)
+    const hasHomeIndicator = insets.bottom > 0;
+    
+    if (hasHomeIndicator) {
+      // iPhone X+ style devices - less padding needed
+      return 85;
+    } else {
+      // Older devices or Android with navigation buttons
+      return 75;
+    }
+  };
 
   return (
     <>
@@ -20,9 +39,29 @@ export default function RootLayout() {
             backgroundColor: theme.tabBar,
             borderTopWidth: 1,
             borderTopColor: theme.border,
-            height: 80,
-            paddingBottom: 20,
-            paddingTop: 10,
+            // ✅ DYNAMIC HEIGHT: Adapts to device type
+            height: getTabBarHeight(),
+            // ✅ SMART PADDING: Adjusts for device navigation
+            paddingBottom: Math.max(insets.bottom - 5, 10), // At least 10px, subtract 5 from home indicator
+            paddingTop: 12,
+            // ✅ SHADOW: Better visual separation
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 10,
+            // ✅ POSITIONING: Slightly above bottom on Android
+            position: 'absolute',
+            bottom: Platform.OS === 'ios' ? 0 : 0.1, // 5px above on Android
+          },
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: '600',
+            marginTop: 2,
+            marginBottom: 2,
+          },
+          tabBarIconStyle: {
+            marginBottom: -2,
           },
         }}
       >
@@ -62,7 +101,6 @@ export default function RootLayout() {
             ),
           }}
         />
-        {/* ✅ REPLACED: Profile tab with GreenMitra tab */}
         <Tabs.Screen
           name="greenmitra"
           options={{

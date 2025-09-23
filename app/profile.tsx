@@ -1,4 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
+import { useTabBarHeight } from '../hooks/useTabBarHeight';
+
 import { 
   StyleSheet, 
   Text, 
@@ -16,8 +18,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useData } from '../../contexts/DataContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { useData } from '../contexts/DataContext';
 
 const { width } = Dimensions.get('window');
 
@@ -34,7 +36,8 @@ interface EditableField {
 export default function ProfileScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
   const { user, logoutUser, loading, updateUserProfile } = useData();
-  const styles = createStyles(theme);
+  const { contentBottomPadding } = useTabBarHeight(); 
+  const styles = createStyles(theme, contentBottomPadding);
 
   // Modal and editing states
   const [showEditModal, setShowEditModal] = useState(false);
@@ -833,13 +836,13 @@ export default function ProfileScreen() {
   );
 }
 
-const createStyles = (theme: any) => StyleSheet.create({
+const createStyles = (theme: any, contentBottomPadding: number) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.background,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: contentBottomPadding,
   },
   content: {
     paddingHorizontal: 20,

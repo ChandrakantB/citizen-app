@@ -1,4 +1,6 @@
 import { StatusBar } from "expo-status-bar";
+import { useTabBarHeight } from "../../hooks/useTabBarHeight";
+
 import {
   StyleSheet,
   Text,
@@ -22,30 +24,55 @@ import NearbyFacilitiesMap from "../../components/NearbyFacilitiesMap";
 import { AIAnalysisModal } from "../../components/AIAnalysisModal";
 import { router } from "expo-router";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const { theme, isDark } = useTheme();
   const { user, submitReport } = useData();
+  const { contentBottomPadding } = useTabBarHeight();
   const styles = createStyles(theme);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [reportLocation, setReportLocation] = useState<string>("Location detecting...");
+  const [reportLocation, setReportLocation] = useState<string>(
+    "Location detecting..."
+  );
   const [showEducationalContent, setShowEducationalContent] = useState(false);
   const [showNearbyFacilities, setShowNearbyFacilities] = useState(false);
   const [lastAnalysis, setLastAnalysis] = useState<any>(null);
-  
+
   // ✅ AI Analysis Modal State
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
-  const [analysisState, setAnalysisState] = useState({
+  type AnalysisResult = {
+    wasteType: string;
+    urgency: string;
+    severity: string;
+    reasoning: string;
+    segregationLevel: string;
+    segregationReasoning: string;
+    id: string;
+    createdAt: string;
+  };
+
+  type AnalysisState = {
+    isAnalyzing: boolean;
+    progress: number;
+    analysis: AnalysisResult | null;
+    reportType: string;
+    location: string;
+  };
+
+  const [analysisState, setAnalysisState] = useState<AnalysisState>({
     isAnalyzing: false,
     progress: 0,
     analysis: null,
-    reportType: '',
-    location: '',
+    reportType: "",
+    location: "",
   });
 
   console.log("Home screen render - User:", user);
-  console.log("Home screen render - submitReport function:", typeof submitReport);
+  console.log(
+    "Home screen render - submitReport function:",
+    typeof submitReport
+  );
 
   const getCurrentLocation = async () => {
     try {
@@ -62,9 +89,13 @@ export default function HomeScreen() {
 
       if (address[0]) {
         const addr = address[0];
-        return `${addr.street || ""} ${addr.city || ""} ${addr.region || ""}`.trim();
+        return `${addr.street || ""} ${addr.city || ""} ${
+          addr.region || ""
+        }`.trim();
       }
-      return `${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)}`;
+      return `${location.coords.latitude.toFixed(
+        4
+      )}, ${location.coords.longitude.toFixed(4)}`;
     } catch (error) {
       console.log("Location error:", error);
       return "Location unavailable";
@@ -75,7 +106,8 @@ export default function HomeScreen() {
     console.log("takePhoto called");
 
     if (Platform.OS === "web") {
-      const demoImage = "https://via.placeholder.com/300x200/dc2626/ffffff?text=Camera+Demo+Report";
+      const demoImage =
+        "https://via.placeholder.com/300x200/dc2626/ffffff?text=Camera+Demo+Report";
       setSelectedImage(demoImage);
       setReportLocation("Demo Location - Camera, Web Browser");
       showReportDialog(demoImage, "Demo Location - Camera, Web Browser");
@@ -84,7 +116,10 @@ export default function HomeScreen() {
 
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission needed", "Camera access is required to report waste");
+      Alert.alert(
+        "Permission needed",
+        "Camera access is required to report waste"
+      );
       return;
     }
 
@@ -106,7 +141,8 @@ export default function HomeScreen() {
     console.log("selectFromGallery called");
 
     if (Platform.OS === "web") {
-      const demoImage = "https://via.placeholder.com/300x200/22c55e/ffffff?text=Gallery+Demo+Report";
+      const demoImage =
+        "https://via.placeholder.com/300x200/22c55e/ffffff?text=Gallery+Demo+Report";
       setSelectedImage(demoImage);
       setReportLocation("Demo Location - Gallery, Web Browser");
       showReportDialog(demoImage, "Demo Location - Gallery, Web Browser");
@@ -115,7 +151,10 @@ export default function HomeScreen() {
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission needed", "Gallery access is required to select photos");
+      Alert.alert(
+        "Permission needed",
+        "Gallery access is required to select photos"
+      );
       return;
     }
 
@@ -137,7 +176,12 @@ export default function HomeScreen() {
     console.log("showReportDialog called with:", { photoUri, location });
 
     if (Platform.OS === "web") {
-      const wasteTypes = ["General Waste", "Medical Waste", "Electronic Waste", "Construction Debris"];
+      const wasteTypes = [
+        "General Waste",
+        "Medical Waste",
+        "Electronic Waste",
+        "Construction Debris",
+      ];
       const choice = prompt(
         `Location: ${location}\n\nChoose waste type:\n\n1. General Waste\n2. Medical Waste\n3. Electronic Waste\n4. Construction Debris\n\nEnter number (1-4):`
       );
@@ -153,7 +197,12 @@ export default function HomeScreen() {
         ];
 
         console.log(`${selectedType} selected - will show MODAL`);
-        submitWasteReport(photoUri, location, selectedType, descriptions[typeIndex]);
+        submitWasteReport(
+          photoUri,
+          location,
+          selectedType,
+          descriptions[typeIndex]
+        );
       } else if (choice !== null) {
         alert("Invalid selection. Please try again.");
       }
@@ -166,28 +215,48 @@ export default function HomeScreen() {
             text: "General Waste",
             onPress: () => {
               console.log("General Waste selected - will show MODAL");
-              submitWasteReport(photoUri, location, "General Waste", "Mixed waste requiring pickup");
+              submitWasteReport(
+                photoUri,
+                location,
+                "General Waste",
+                "Mixed waste requiring pickup"
+              );
             },
           },
           {
             text: "Medical Waste",
             onPress: () => {
               console.log("Medical Waste selected - will show MODAL");
-              submitWasteReport(photoUri, location, "Medical Waste", "Medical waste requiring special handling");
+              submitWasteReport(
+                photoUri,
+                location,
+                "Medical Waste",
+                "Medical waste requiring special handling"
+              );
             },
           },
           {
             text: "Electronic Waste",
             onPress: () => {
               console.log("Electronic Waste selected - will show MODAL");
-              submitWasteReport(photoUri, location, "Electronic Waste", "Electronic items for proper disposal");
+              submitWasteReport(
+                photoUri,
+                location,
+                "Electronic Waste",
+                "Electronic items for proper disposal"
+              );
             },
           },
           {
             text: "Construction Debris",
             onPress: () => {
               console.log("Construction Debris selected - will show MODAL");
-              submitWasteReport(photoUri, location, "Construction Debris", "Construction materials blocking area");
+              submitWasteReport(
+                photoUri,
+                location,
+                "Construction Debris",
+                "Construction materials blocking area"
+              );
             },
           },
           { text: "Cancel", style: "cancel" },
@@ -214,14 +283,14 @@ export default function HomeScreen() {
       location: location,
     });
     setShowAnalysisModal(true);
-    
+
     console.log("🎨 Modal should be visible now");
 
     // ✅ Simulate realistic progress updates
     const progressInterval = setInterval(() => {
-      setAnalysisState(prev => ({
+      setAnalysisState((prev) => ({
         ...prev,
-        progress: Math.min(prev.progress + Math.random() * 15, 95)
+        progress: Math.min(prev.progress + Math.random() * 15, 95),
       }));
     }, 800);
 
@@ -248,23 +317,22 @@ export default function HomeScreen() {
       }
 
       // ✅ Update modal to show beautiful results (NO ALERTS!)
-      setAnalysisState(prev => ({
+      setAnalysisState((prev) => ({
         ...prev,
         isAnalyzing: false,
         progress: 100,
-        analysis: result.analysis,
+        analysis: result.analysis ?? null,
       }));
 
       console.log("🎉 Modal updated with results - no alerts should show");
-
     } catch (error) {
       console.log("❌ submitWasteReport error:", error);
-      
+
       // Clear progress interval
       clearInterval(progressInterval);
 
       // ✅ Show error state in modal (NO ALERTS!)
-      setAnalysisState(prev => ({
+      setAnalysisState((prev) => ({
         ...prev,
         isAnalyzing: false,
         progress: 100,
@@ -303,7 +371,13 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            // ✅ FIXED: Dynamic bottom padding
+            paddingBottom: contentBottomPadding,
+          },
+        ]}
       >
         {/* Enhanced Hero Section */}
         <View style={styles.heroSection}>
@@ -315,7 +389,9 @@ export default function HomeScreen() {
               <Ionicons name="leaf" size={32} color="#ffffff" />
             </View>
             <Text style={styles.heroTitle}>Bin2Win</Text>
-            <Text style={styles.heroSubtitle}>AI-Powered Smart Waste Management</Text>
+            <Text style={styles.heroSubtitle}>
+              AI-Powered Smart Waste Management
+            </Text>
             <View style={styles.userGreeting}>
               <Text style={styles.welcomeText}>
                 Welcome back, {user?.name || "Eco Warrior"}! 👋
@@ -337,34 +413,50 @@ export default function HomeScreen() {
             <Image source={{ uri: selectedImage }} style={styles.reportImage} />
             <View style={styles.reportDetails}>
               <Text style={styles.reportLocation}>{reportLocation}</Text>
-              <Text style={styles.pointsEarned}>+{lastAnalysis ? 15 : 10} Green Coins Earned! 🏆</Text>
-              
+              <Text style={styles.pointsEarned}>
+                +{lastAnalysis ? 15 : 10} Green Coins Earned! 🏆
+              </Text>
+
               {lastAnalysis && (
                 <View style={styles.analysisPreview}>
                   <View style={styles.analysisHeader}>
                     <Ionicons name="analytics" size={16} color="#8b5cf6" />
-                    <Text style={styles.analysisTitle}>AI Analysis Complete!</Text>
+                    <Text style={styles.analysisTitle}>
+                      AI Analysis Complete!
+                    </Text>
                   </View>
                   <View style={styles.analysisContent}>
-                    <Text style={styles.analysisDetail}>🗑️ Type: {lastAnalysis.wasteType}</Text>
-                    <Text style={styles.analysisDetail}>🔴 Severity: {lastAnalysis.severity}</Text>
-                    <Text style={styles.analysisDetail}>⚡ Urgency: {lastAnalysis.urgency}</Text>
+                    <Text style={styles.analysisDetail}>
+                      🗑️ Type: {lastAnalysis.wasteType}
+                    </Text>
+                    <Text style={styles.analysisDetail}>
+                      🔴 Severity: {lastAnalysis.severity}
+                    </Text>
+                    <Text style={styles.analysisDetail}>
+                      ⚡ Urgency: {lastAnalysis.urgency}
+                    </Text>
                   </View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.viewFullAnalysisButton}
                     onPress={() => {
                       setAnalysisState({
                         isAnalyzing: false,
                         progress: 100,
                         analysis: lastAnalysis,
-                        reportType: 'Previous Report',
+                        reportType: "Previous Report",
                         location: reportLocation,
                       });
                       setShowAnalysisModal(true);
                     }}
                   >
-                    <Text style={styles.viewFullAnalysisText}>View Full Analysis</Text>
-                    <Ionicons name="chevron-forward" size={16} color="#8b5cf6" />
+                    <Text style={styles.viewFullAnalysisText}>
+                      View Full Analysis
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color="#8b5cf6"
+                    />
                   </TouchableOpacity>
                 </View>
               )}
@@ -372,50 +464,6 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ✅ TEST BUTTON - Remove this after testing */}
-        {__DEV__ && (
-          <TouchableOpacity
-            style={{
-              backgroundColor: '#FF6B6B',
-              margin: 20,
-              padding: 15,
-              borderRadius: 10,
-              alignItems: 'center'
-            }}
-            onPress={() => {
-              console.log("🧪 Testing modal directly");
-              setAnalysisState({
-                isAnalyzing: true,
-                progress: 45,
-                analysis: null,
-                reportType: 'Test Waste',
-                location: 'Test Location',
-              });
-              setShowAnalysisModal(true);
-              
-              // Simulate completion after 3 seconds
-              setTimeout(() => {
-                setAnalysisState(prev => ({
-                  ...prev,
-                  isAnalyzing: false,
-                  progress: 100,
-                  analysis: {
-                    wasteType: 'Test plastic waste',
-                    urgency: 'High',
-                    severity: 'Moderate',
-                    reasoning: 'This is a test analysis for modal verification.',
-                    segregationLevel: 'Mixed',
-                    segregationReasoning: 'Test segregation advice.',
-                    id: 'test-123',
-                    createdAt: new Date().toISOString()
-                  },
-                }));
-              }, 3000);
-            }}
-          >
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>🧪 TEST MODAL</Text>
-          </TouchableOpacity>
-        )}
 
         {/* Enhanced Submit Report Button */}
         <View style={styles.primaryActionSection}>
@@ -434,8 +482,12 @@ export default function HomeScreen() {
                   <Ionicons name="camera" size={28} color="#ffffff" />
                 </View>
                 <View style={styles.reportButtonText}>
-                  <Text style={styles.reportButtonTitle}>Submit Waste Report</Text>
-                  <Text style={styles.reportButtonTagline}>Get AI analysis within 10 seconds ⚡</Text>
+                  <Text style={styles.reportButtonTitle}>
+                    Submit Waste Report
+                  </Text>
+                  <Text style={styles.reportButtonTagline}>
+                    Get AI analysis within 10 seconds ⚡
+                  </Text>
                 </View>
                 <View style={styles.reportButtonArrow}>
                   <Ionicons name="arrow-forward" size={24} color="#ffffff" />
@@ -448,7 +500,7 @@ export default function HomeScreen() {
         {/* Quick Actions Grid */}
         <View style={styles.quickActionsSection}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          
+
           <View style={styles.actionGrid}>
             <TouchableOpacity
               style={[styles.actionCard, styles.actionCardPrimary]}
@@ -456,7 +508,10 @@ export default function HomeScreen() {
                 if (Platform.OS === "web") {
                   alert("Find Bins feature coming soon!");
                 } else {
-                  Alert.alert("Find Bins", "This feature will show nearby waste bins on a map.");
+                  Alert.alert(
+                    "Find Bins",
+                    "This feature will show nearby waste bins on a map."
+                  );
                 }
               }}
             >
@@ -475,7 +530,7 @@ export default function HomeScreen() {
                     isAnalyzing: false,
                     progress: 100,
                     analysis: lastAnalysis,
-                    reportType: 'Recent Report',
+                    reportType: "Recent Report",
                     location: reportLocation,
                   });
                   setShowAnalysisModal(true);
@@ -483,7 +538,10 @@ export default function HomeScreen() {
                   if (Platform.OS === "web") {
                     alert("Submit a report first to see AI analysis!");
                   } else {
-                    Alert.alert("AI Analysis", "Submit a report first to see AI analysis!");
+                    Alert.alert(
+                      "AI Analysis",
+                      "Submit a report first to see AI analysis!"
+                    );
                   }
                 }
               }}
@@ -501,12 +559,21 @@ export default function HomeScreen() {
             onPress={() => setShowEducationalContent(true)}
           >
             <View style={styles.fullActionContent}>
-              <View style={[styles.actionIconContainer, { backgroundColor: "#8b5cf6" + "20" }]}>
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  { backgroundColor: "#8b5cf6" + "20" },
+                ]}
+              >
                 <Ionicons name="school" size={24} color="#8b5cf6" />
               </View>
               <View style={styles.fullActionText}>
-                <Text style={[styles.actionTitle, { color: "#8b5cf6" }]}>Learn & Educate</Text>
-                <Text style={styles.actionSubtitle}>Waste management tips & guides</Text>
+                <Text style={[styles.actionTitle, { color: "#8b5cf6" }]}>
+                  Learn & Educate
+                </Text>
+                <Text style={styles.actionSubtitle}>
+                  Waste management tips & guides
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#8b5cf6" />
             </View>
@@ -517,14 +584,27 @@ export default function HomeScreen() {
             onPress={() => setShowNearbyFacilities(true)}
           >
             <View style={styles.fullActionContent}>
-              <View style={[styles.actionIconContainer, { backgroundColor: theme.primary + "20" }]}>
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  { backgroundColor: theme.primary + "20" },
+                ]}
+              >
                 <Ionicons name="map" size={24} color={theme.primary} />
               </View>
               <View style={styles.fullActionText}>
-                <Text style={[styles.actionTitle, { color: theme.primary }]}>Find Facilities</Text>
-                <Text style={styles.actionSubtitle}>Recycling centers & collection points</Text>
+                <Text style={[styles.actionTitle, { color: theme.primary }]}>
+                  Find Facilities
+                </Text>
+                <Text style={styles.actionSubtitle}>
+                  Recycling centers & collection points
+                </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={theme.primary} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={theme.primary}
+              />
             </View>
           </TouchableOpacity>
 
@@ -533,16 +613,25 @@ export default function HomeScreen() {
             style={styles.fullWidthActionCard}
             onPress={() => {
               // Navigate to GreenMitra tab
-              router.push('/(tabs)/greenmitra');
+              router.push("/(tabs)/greenmitra");
             }}
           >
             <View style={styles.fullActionContent}>
-              <View style={[styles.actionIconContainer, { backgroundColor: "#10b981" + "20" }]}>
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  { backgroundColor: "#10b981" + "20" },
+                ]}
+              >
                 <Ionicons name="leaf" size={24} color="#10b981" />
               </View>
               <View style={styles.fullActionText}>
-                <Text style={[styles.actionTitle, { color: "#10b981" }]}>🌱 GreenMitra Chatbot</Text>
-                <Text style={styles.actionSubtitle}>AI waste classification assistant</Text>
+                <Text style={[styles.actionTitle, { color: "#10b981" }]}>
+                  🌱 GreenMitra Chatbot
+                </Text>
+                <Text style={styles.actionSubtitle}>
+                  AI waste classification assistant
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#10b981" />
             </View>
@@ -552,16 +641,25 @@ export default function HomeScreen() {
             style={styles.fullWidthActionCard}
             onPress={() => {
               // Navigate to services tab for more tools
-              router.push('/(tabs)/services');
+              router.push("/(tabs)/services");
             }}
           >
             <View style={styles.fullActionContent}>
-              <View style={[styles.actionIconContainer, { backgroundColor: "#f59e0b" + "20" }]}>
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  { backgroundColor: "#f59e0b" + "20" },
+                ]}
+              >
                 <Ionicons name="construct" size={24} color="#f59e0b" />
               </View>
               <View style={styles.fullActionText}>
-                <Text style={[styles.actionTitle, { color: "#f59e0b" }]}>More Services</Text>
-                <Text style={styles.actionSubtitle}>Explore all waste management tools</Text>
+                <Text style={[styles.actionTitle, { color: "#f59e0b" }]}>
+                  More Services
+                </Text>
+                <Text style={styles.actionSubtitle}>
+                  Explore all waste management tools
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#f59e0b" />
             </View>
@@ -577,11 +675,13 @@ export default function HomeScreen() {
                 <Ionicons name="document-text" size={24} color="#3b82f6" />
               </View>
               <View style={styles.statContent}>
-                <Text style={styles.statNumber}>{user?.reportsSubmitted || 0}</Text>
+                <Text style={styles.statNumber}>
+                  {user?.reportsSubmitted || 0}
+                </Text>
                 <Text style={styles.statLabel}>Reports Submitted</Text>
               </View>
             </View>
-            
+
             <View style={styles.statCard}>
               <View style={styles.statIconContainer}>
                 <Ionicons name="trophy" size={24} color="#f59e0b" />
@@ -597,7 +697,9 @@ export default function HomeScreen() {
                 <Ionicons name="analytics" size={24} color="#8b5cf6" />
               </View>
               <View style={styles.statContent}>
-                <Text style={styles.statNumber}>{user?.reportsSubmitted || 0}</Text>
+                <Text style={styles.statNumber}>
+                  {user?.reportsSubmitted || 0}
+                </Text>
                 <Text style={styles.statLabel}>AI Analyzed</Text>
               </View>
             </View>
@@ -613,15 +715,18 @@ export default function HomeScreen() {
                 <Ionicons name="leaf" size={20} color="#10b981" />
               </View>
               <Text style={styles.tipText}>
-                Use GreenMitra chatbot to learn proper waste segregation for any item!
+                Use GreenMitra chatbot to learn proper waste segregation for any
+                item!
               </Text>
             </View>
             <View style={styles.tipCard}>
               <View style={styles.tipIcon}>
-                <Ionicons name="recycle" size={20} color="#3b82f6" />
+                {/* ✅ FIXED: Changed from "recycle" to valid icon */}
+                <Ionicons name="refresh-outline" size={20} color="#3b82f6" />
               </View>
               <Text style={styles.tipText}>
-                Clean containers before disposal to ensure better recycling quality.
+                Clean containers before disposal to ensure better recycling
+                quality.
               </Text>
             </View>
           </View>
@@ -633,7 +738,8 @@ export default function HomeScreen() {
               <Ionicons name="information-circle" size={20} color="#6b7280" />
             </View>
             <Text style={styles.webNoticeText}>
-              Full camera, location, and AI analysis features available on mobile devices. Web version uses demo mode.
+              Full camera, location, and AI analysis features available on
+              mobile devices. Web version uses demo mode.
             </Text>
           </View>
         )}
@@ -651,12 +757,12 @@ export default function HomeScreen() {
       />
 
       {/* Existing Modals */}
-      <EducationalContent 
+      <EducationalContent
         visible={showEducationalContent}
         onClose={() => setShowEducationalContent(false)}
       />
 
-      <NearbyFacilitiesMap 
+      <NearbyFacilitiesMap
         visible={showNearbyFacilities}
         onClose={() => setShowNearbyFacilities(false)}
       />
@@ -674,78 +780,78 @@ const createStyles = (theme: any) =>
       flex: 1,
     },
     scrollContent: {
-      paddingBottom: 100,
+      paddingBottom: 100, // Base padding, will be overridden by contentBottomPadding
     },
-    
+
     // Enhanced Hero Section
     heroSection: {
       height: 280,
-      position: 'relative',
+      position: "relative",
       marginBottom: 24,
     },
     heroBackground: {
-      position: 'absolute',
+      position: "absolute",
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: '#3b82f6',
+      backgroundColor: "#10b981", // Green instead of blue
     },
     heroGradient: {
-      position: 'absolute',
+      position: "absolute",
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(59, 130, 246, 0.9)',
+      backgroundColor: "rgba(16, 185, 129, 0.9)", // Green gradient
     },
     heroContent: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
       paddingHorizontal: 24,
-      position: 'relative',
+      position: "relative",
       zIndex: 1,
     },
     appBadge: {
       width: 80,
       height: 80,
       borderRadius: 40,
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      justifyContent: 'center',
-      alignItems: 'center',
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      justifyContent: "center",
+      alignItems: "center",
       marginBottom: 16,
       borderWidth: 2,
-      borderColor: 'rgba(255, 255, 255, 0.3)',
+      borderColor: "rgba(255, 255, 255, 0.3)",
     },
     heroTitle: {
       fontSize: 36,
-      fontWeight: '700',
-      color: '#ffffff',
-      textAlign: 'center',
+      fontWeight: "700",
+      color: "#ffffff",
+      textAlign: "center",
       marginBottom: 8,
       letterSpacing: -1,
     },
     heroSubtitle: {
       fontSize: 16,
-      color: 'rgba(255, 255, 255, 0.9)',
-      textAlign: 'center',
+      color: "rgba(255, 255, 255, 0.9)",
+      textAlign: "center",
       marginBottom: 24,
       lineHeight: 22,
     },
     userGreeting: {
-      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+      backgroundColor: "rgba(255, 255, 255, 0.15)",
       paddingHorizontal: 20,
       paddingVertical: 12,
       borderRadius: 25,
       borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.2)',
+      borderColor: "rgba(255, 255, 255, 0.2)",
     },
     welcomeText: {
       fontSize: 16,
-      fontWeight: '600',
-      color: '#ffffff',
-      textAlign: 'center',
+      fontWeight: "600",
+      color: "#ffffff",
+      textAlign: "center",
     },
 
     // Enhanced Latest Report Card with Analysis
@@ -754,7 +860,7 @@ const createStyles = (theme: any) =>
       borderRadius: 20,
       marginHorizontal: 20,
       marginBottom: 24,
-      overflow: 'hidden',
+      overflow: "hidden",
       shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.1,
@@ -762,17 +868,17 @@ const createStyles = (theme: any) =>
       elevation: 6,
     },
     reportHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
       padding: 16,
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
     },
     reportStatusBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#10b981' + '20',
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#10b981" + "20",
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderRadius: 12,
@@ -780,17 +886,17 @@ const createStyles = (theme: any) =>
     },
     reportStatusText: {
       fontSize: 14,
-      fontWeight: '600',
-      color: '#10b981',
+      fontWeight: "600",
+      color: "#10b981",
     },
     reportTime: {
       fontSize: 12,
       color: theme.textSecondary,
     },
     reportImage: {
-      width: '100%',
+      width: "100%",
       height: 200,
-      resizeMode: 'cover',
+      resizeMode: "cover",
     },
     reportDetails: {
       padding: 16,
@@ -799,33 +905,33 @@ const createStyles = (theme: any) =>
     reportLocation: {
       fontSize: 14,
       color: theme.text,
-      fontWeight: '500',
+      fontWeight: "500",
     },
     pointsEarned: {
       fontSize: 14,
-      color: '#f59e0b',
-      fontWeight: '600',
+      color: "#f59e0b",
+      fontWeight: "600",
     },
-    
+
     // Analysis Preview Section
     analysisPreview: {
-      backgroundColor: '#8b5cf6' + '10',
+      backgroundColor: "#8b5cf6" + "10",
       borderRadius: 12,
       padding: 12,
       marginTop: 8,
       borderWidth: 1,
-      borderColor: '#8b5cf6' + '20',
+      borderColor: "#8b5cf6" + "20",
     },
     analysisHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       marginBottom: 8,
       gap: 6,
     },
     analysisTitle: {
       fontSize: 14,
-      fontWeight: '600',
-      color: '#8b5cf6',
+      fontWeight: "600",
+      color: "#8b5cf6",
     },
     analysisContent: {
       gap: 4,
@@ -834,19 +940,19 @@ const createStyles = (theme: any) =>
     analysisDetail: {
       fontSize: 12,
       color: theme.text,
-      fontWeight: '500',
+      fontWeight: "500",
     },
     viewFullAnalysisButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       paddingVertical: 6,
       gap: 4,
     },
     viewFullAnalysisText: {
       fontSize: 12,
-      color: '#8b5cf6',
-      fontWeight: '600',
+      color: "#8b5cf6",
+      fontWeight: "600",
     },
 
     // Enhanced Primary Report Button
@@ -856,26 +962,26 @@ const createStyles = (theme: any) =>
     },
     primaryReportButton: {
       borderRadius: 24,
-      overflow: 'hidden',
-      shadowColor: '#dc2626',
+      overflow: "hidden",
+      shadowColor: "#dc2626",
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.3,
       shadowRadius: 16,
       elevation: 8,
-      position: 'relative',
+      position: "relative",
     },
     reportButtonGradient: {
-      backgroundColor: '#dc2626',
+      backgroundColor: "#dc2626",
       paddingVertical: 24,
       paddingHorizontal: 24,
     },
     aiPoweredBadge: {
-      position: 'absolute',
+      position: "absolute",
       top: 8,
       right: 8,
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: 12,
@@ -884,12 +990,12 @@ const createStyles = (theme: any) =>
     },
     aiPoweredText: {
       fontSize: 10,
-      fontWeight: '600',
-      color: '#ffffff',
+      fontWeight: "600",
+      color: "#ffffff",
     },
     reportButtonContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       gap: 16,
       marginTop: 16,
     },
@@ -897,31 +1003,31 @@ const createStyles = (theme: any) =>
       width: 56,
       height: 56,
       borderRadius: 28,
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      justifyContent: 'center',
-      alignItems: 'center',
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      justifyContent: "center",
+      alignItems: "center",
     },
     reportButtonText: {
       flex: 1,
     },
     reportButtonTitle: {
       fontSize: 20,
-      fontWeight: '700',
-      color: '#ffffff',
+      fontWeight: "700",
+      color: "#ffffff",
       marginBottom: 4,
     },
     reportButtonTagline: {
       fontSize: 14,
-      color: 'rgba(255, 255, 255, 0.9)',
-      fontWeight: '500',
+      color: "rgba(255, 255, 255, 0.9)",
+      fontWeight: "500",
     },
     reportButtonArrow: {
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      justifyContent: 'center',
-      alignItems: 'center',
+      backgroundColor: "rgba(255, 255, 255, 0.2)",
+      justifyContent: "center",
+      alignItems: "center",
     },
 
     // Quick Actions
@@ -931,13 +1037,13 @@ const createStyles = (theme: any) =>
     },
     sectionTitle: {
       fontSize: 22,
-      fontWeight: '700',
+      fontWeight: "700",
       color: theme.text,
       marginBottom: 20,
       letterSpacing: -0.5,
     },
     actionGrid: {
-      flexDirection: 'row',
+      flexDirection: "row",
       gap: 16,
       marginBottom: 16,
     },
@@ -945,7 +1051,7 @@ const createStyles = (theme: any) =>
       flex: 1,
       borderRadius: 16,
       padding: 20,
-      alignItems: 'center',
+      alignItems: "center",
       shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
@@ -962,22 +1068,22 @@ const createStyles = (theme: any) =>
       width: 48,
       height: 48,
       borderRadius: 24,
-      backgroundColor: '#3b82f6' + '20',
-      justifyContent: 'center',
-      alignItems: 'center',
+      backgroundColor: "#3b82f6" + "20",
+      justifyContent: "center",
+      alignItems: "center",
       marginBottom: 12,
     },
     actionTitle: {
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: "600",
       color: theme.text,
-      textAlign: 'center',
+      textAlign: "center",
       marginBottom: 4,
     },
     actionSubtitle: {
       fontSize: 12,
       color: theme.textSecondary,
-      textAlign: 'center',
+      textAlign: "center",
       lineHeight: 16,
     },
     fullWidthActionCard: {
@@ -992,8 +1098,8 @@ const createStyles = (theme: any) =>
       elevation: 3,
     },
     fullActionContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       gap: 16,
     },
     fullActionText: {
@@ -1006,7 +1112,7 @@ const createStyles = (theme: any) =>
       marginBottom: 32,
     },
     statsContainer: {
-      flexDirection: 'row',
+      flexDirection: "row",
       gap: 12,
     },
     statCard: {
@@ -1014,7 +1120,7 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.card,
       borderRadius: 16,
       padding: 16,
-      alignItems: 'center',
+      alignItems: "center",
       shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
@@ -1025,25 +1131,25 @@ const createStyles = (theme: any) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: '#3b82f6' + '20',
-      justifyContent: 'center',
-      alignItems: 'center',
+      backgroundColor: "#3b82f6" + "20",
+      justifyContent: "center",
+      alignItems: "center",
       marginBottom: 12,
     },
     statContent: {
-      alignItems: 'center',
+      alignItems: "center",
     },
     statNumber: {
       fontSize: 24,
-      fontWeight: '700',
+      fontWeight: "700",
       color: theme.text,
       marginBottom: 4,
     },
     statLabel: {
       fontSize: 12,
       color: theme.textSecondary,
-      textAlign: 'center',
-      fontWeight: '500',
+      textAlign: "center",
+      fontWeight: "500",
     },
 
     // Tips Section
@@ -1058,8 +1164,8 @@ const createStyles = (theme: any) =>
       backgroundColor: theme.card,
       borderRadius: 12,
       padding: 16,
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       shadowColor: theme.shadow,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05,
@@ -1070,9 +1176,9 @@ const createStyles = (theme: any) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: '#10b981' + '20',
-      justifyContent: 'center',
-      alignItems: 'center',
+      backgroundColor: "#10b981" + "20",
+      justifyContent: "center",
+      alignItems: "center",
       marginRight: 12,
     },
     tipText: {
@@ -1084,12 +1190,12 @@ const createStyles = (theme: any) =>
 
     // Web Notice
     webNotice: {
-      flexDirection: 'row',
-      backgroundColor: '#f3f4f6',
+      flexDirection: "row",
+      backgroundColor: "#f3f4f6",
       marginHorizontal: 20,
       padding: 16,
       borderRadius: 12,
-      alignItems: 'flex-start',
+      alignItems: "flex-start",
       gap: 12,
     },
     webNoticeIcon: {
@@ -1098,7 +1204,7 @@ const createStyles = (theme: any) =>
     webNoticeText: {
       flex: 1,
       fontSize: 14,
-      color: '#6b7280',
+      color: "#6b7280",
       lineHeight: 20,
     },
   });

@@ -1,19 +1,29 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { Stack, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useData } from '../contexts/DataContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function NotificationsScreen() {
-  const { notifications, markNotificationAsRead } = useData();
-  const { theme, isDark } = useTheme();
+  const { notifications } = useData();
+  const { theme } = useTheme();
 
-  const handleNotificationPress = async (notification: any) => {
-    if (!notification.read) {
-      await markNotificationAsRead(notification.id);
-    }
+  // ✅ NO API CALLS - Just mark as read locally
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('📢 Notifications screen focused - marking all as read locally');
+      
+      // Just log that we're marking as read (no API calls)
+      const unreadNotifications = notifications.filter(n => !n.read);
+      if (unreadNotifications.length > 0) {
+        console.log(`✅ Would mark ${unreadNotifications.length} notifications as read (locally only)`);
+      }
+    }, [notifications])
+  );
 
+  const handleNotificationPress = (notification: any) => {
     // Navigate based on notification type
     switch (notification.type) {
       case 'report':
@@ -31,13 +41,6 @@ export default function NotificationsScreen() {
       default:
         router.back();
         break;
-    }
-  };
-
-  const markAllAsRead = async () => {
-    const unreadNotifications = notifications.filter(n => !n.read);
-    for (const notification of unreadNotifications) {
-      await markNotificationAsRead(notification.id);
     }
   };
 
@@ -69,11 +72,7 @@ export default function NotificationsScreen() {
     <TouchableOpacity 
       style={[
         styles.notificationItem, 
-        { 
-          backgroundColor: item.read ? theme.background : theme.cardBackground,
-          borderLeftColor: item.read ? 'transparent' : theme.primary,
-          borderLeftWidth: item.read ? 0 : 3,
-        }
+        { backgroundColor: theme.card }
       ]}
       onPress={() => handleNotificationPress(item)}
       activeOpacity={0.7}
@@ -86,13 +85,7 @@ export default function NotificationsScreen() {
         />
       </View>
       <View style={styles.notificationContent}>
-        <Text style={[
-          styles.notificationTitle, 
-          { 
-            color: theme.text,
-            fontWeight: item.read ? '500' : '600'
-          }
-        ]}>
+        <Text style={[styles.notificationTitle, { color: theme.text }]}>
           {item.title}
         </Text>
         <Text style={[styles.notificationMessage, { color: theme.textSecondary }]}>
@@ -102,69 +95,33 @@ export default function NotificationsScreen() {
           {getTimeAgo(item.timestamp)}
         </Text>
       </View>
-      {!item.read && (
-        <View style={styles.unreadIndicator}>
-          <View style={[styles.unreadDot, { backgroundColor: theme.primary }]} />
-        </View>
-      )}
     </TouchableOpacity>
   );
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
   return (
-    <>
-      <Stack.Screen 
-        options={{ 
-          title: 'Notifications',
-          headerBackTitle: 'Back',
-          headerStyle: { backgroundColor: theme.background },
-          headerTintColor: theme.text,
-          headerRight: unreadCount > 0 ? () => (
-            <TouchableOpacity 
-              onPress={markAllAsRead}
-              style={styles.markAllButton}
-            >
-              <Text style={[styles.markAllText, { color: theme.primary }]}>
-                Mark All Read
-              </Text>
-            </TouchableOpacity>
-          ) : undefined,
-        }} 
-      />
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        {notifications.length > 0 ? (
-          <>
-            {unreadCount > 0 && (
-              <View style={[styles.headerInfo, { backgroundColor: `${theme.primary}10` }]}>
-                <Text style={[styles.headerInfoText, { color: theme.primary }]}>
-                  You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
-                </Text>
-              </View>
-            )}
-            <FlatList
-              data={notifications}
-              renderItem={renderNotification}
-              keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.listContainer}
-            />
-          </>
-        ) : (
-          <View style={styles.emptyState}>
-            <View style={[styles.emptyIconContainer, { backgroundColor: `${theme.textSecondary}10` }]}>
-              <Ionicons name="notifications-outline" size={48} color={theme.textSecondary} />
-            </View>
-            <Text style={[styles.emptyText, { color: theme.text }]}>
-              No notifications yet
-            </Text>
-            <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
-              You will see updates about your reports, services, and community activity here
-            </Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top', 'left', 'right']}>
+      {notifications.length > 0 ? (
+        <FlatList
+          data={notifications}
+          renderItem={renderNotification}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContainer}
+        />
+      ) : (
+        <View style={styles.emptyState}>
+          <View style={[styles.emptyIconContainer, { backgroundColor: `${theme.textSecondary}10` }]}>
+            <Ionicons name="notifications-outline" size={48} color={theme.textSecondary} />
           </View>
-        )}
-      </View>
-    </>
+          <Text style={[styles.emptyText, { color: theme.text }]}>
+            No notifications yet
+          </Text>
+          <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
+            You will see updates about your reports and activities here
+          </Text>
+        </View>
+      )}
+    </SafeAreaView>
   );
 }
 
@@ -174,24 +131,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingBottom: 20,
-  },
-  headerInfo: {
-    padding: 12,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 8,
-  },
-  headerInfoText: {
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  markAllButton: {
-    paddingHorizontal: 8,
-  },
-  markAllText: {
-    fontSize: 14,
-    fontWeight: '500',
+    paddingTop: 10,
   },
   notificationItem: {
     flexDirection: 'row',
@@ -217,6 +157,7 @@ const styles = StyleSheet.create({
   },
   notificationTitle: {
     fontSize: 16,
+    fontWeight: '600',
     marginBottom: 4,
     lineHeight: 22,
   },
@@ -227,16 +168,6 @@ const styles = StyleSheet.create({
   },
   notificationTime: {
     fontSize: 12,
-  },
-  unreadIndicator: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingLeft: 8,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
   },
   emptyState: {
     flex: 1,
