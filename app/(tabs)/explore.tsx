@@ -79,59 +79,63 @@ export default function CommunityScreen() {
     category: 'general'
   });
 
-  const [posts, setPosts] = useState<CommunityPost[]>([
-    {
-      id: 'p1',
-      userId: 'user1',
-      userName: 'Sarah Green',
-      userLevel: 'Eco Champion',
-      userAvatar: 'leaf',
-      type: 'achievement',
-      title: 'Reached 50 Reports Milestone!',
-      description: 'Just submitted my 50th waste report! Every small action counts towards a cleaner city. Keep reporting everyone!',
-      imageUri: 'https://via.placeholder.com/300x200/22c55e/ffffff?text=50+Reports',
-      likes: 24,
-      comments: 8,
-      shares: 3,
-      timestamp: '2 hours ago',
-      badge: '50 Reports',
-      likedBy: [],
-      category: 'milestone'
-    },
-    {
-      id: 'p2',
-      userId: 'user2',
-      userName: 'Mike Chen',
-      userLevel: 'Green Warrior',
-      userAvatar: 'recycle',
-      type: 'tip',
-      title: 'Pro Tip: Best Times for Reporting',
-      description: 'I\'ve found that reporting waste issues early morning (7-9 AM) gets the fastest response from cleanup crews. They check the app before starting their routes!',
-      likes: 18,
-      comments: 5,
-      shares: 12,
-      timestamp: '4 hours ago',
-      likedBy: [],
-      category: 'tips'
-    },
-    {
-      id: 'p3',
-      userId: user?.id || 'demo-user-id',
-      userName: user?.name || 'Demo User',
-      userLevel: user?.level || 'Eco Warrior',
-      userAvatar: 'person',
-      type: 'achievement',
-      title: 'Started My Eco Journey',
-      description: 'Just joined Bin2Win! Excited to contribute to a cleaner community. Looking forward to making a difference!',
-      likes: 15,
-      comments: 3,
-      shares: 1,
-      timestamp: '1 day ago',
-      badge: 'New Member',
-      likedBy: [],
-      category: 'welcome'
-    }
-  ]);
+const [posts, setPosts] = useState<CommunityPost[]>([
+  {
+    id: 'p1',
+    userId: 'user1',
+    userName: 'Sandeep Upadhyay',
+    userLevel: 'Eco Champion',
+    userAvatar: 'leaf',
+    type: 'achievement',
+    title: 'Reached 50 Reports Milestone!',
+    description: 'Just submitted my 50th waste report! Every small action counts towards a cleaner city. Keep reporting everyone!',
+    imageUri: 'https://images.unsplash.com/photo-1662534264036-7bfa0d35de9c?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fHdhc3RlJTIwcmVwb3J0fGVufDB8fDB8fHww',
+    likes: 24,
+    comments: 8,
+    shares: 3,
+    timestamp: '2 hours ago',
+    badge: '50 Reports',
+    likedBy: [],
+    category: 'milestone'
+  },
+  {
+    id: 'p2',
+    userId: 'user2',
+    userName: 'Piyush Sharma',
+    userLevel: 'Green Warrior',
+    userAvatar: 'recycle',
+    type: 'tip',
+    title: 'Pro Tip: Best Times for Reporting',
+    description: 'I\'ve found that reporting waste issues early morning (7-9 AM) gets the fastest response from cleanup crews. They check the app before starting their routes!',
+    imageUri: 'https://imgs.search.brave.com/ZbHfdlSyb4BmoO87yEN8FMT9rWktnjxtZnyxHds9JcE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jb2Rh/aG9zdGVkLmlvL2Rv/Y3MveHJfOWNxMzZ2/UC9ibG9icy9ibC05/azN2dVRNcW45Lzhm/ODRkNmVmYzcxMTc4/M2I4YWI5MWVhMzVj/ODkzYTIyMzYyYjZj/OTc0NDc0YjQ4NWNk/ZjBhMTM2OTUwY2Zi/NTcyMzY2ODg5MmQ4/MjI4YmM2MjNhNjdj/MTE2ZjRmNzc1Yzhh/YTk4YmQ3ZDM1MjNm/YmVkMjg1OWFkYjEw/NzI2ODZiNzIwOGEy/MTZhYzk4ZWNmZjZh/M2Y1NWM1YTVhYmVj/ZDM1YzcyZGU1ZTRl/ZjI0NzdmMTZiNzI0/OTZmOTY5NmNlNTNi/ZGQxNjQx',
+    likes: 18,
+    comments: 5,
+    shares: 12,
+    timestamp: '4 hours ago',
+    likedBy: [],
+    category: 'tips'
+  },
+  {
+    id: 'p3',
+    userId: user?.id || 'demo-user-id',
+    userName: user?.name || 'Mayank Karmandhey',
+    userLevel: user?.level || 'Eco Warrior',
+    userAvatar: 'person',
+    type: 'achievement',
+    title: 'Started My Eco Journey',
+    description: 'Just joined Bin2Win! Excited to contribute to a cleaner community. Looking forward to making a difference!',
+    imageUri: 'https://images.unsplash.com/photo-1503596476-1c12a8ba09a9?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHdhc3RlfGVufDB8fDB8fHww',
+    likes: 15,
+    comments: 3,
+    shares: 1,
+    timestamp: '1 day ago',
+    badge: 'New Member',
+    likedBy: [],
+    category: 'welcome'
+  }
+]);
+
+
 
   // Generate achievements based on user data
   const achievements: Achievement[] = [
@@ -226,7 +230,7 @@ export default function CommunityScreen() {
     { 
       rank: 1, 
       userId: 'user1', 
-      name: 'Sarah Green', 
+      name: 'Sandeep Upadhyay', 
       points: 1250, 
       reports: 62, 
       level: 'Eco Champion', 
@@ -236,7 +240,7 @@ export default function CommunityScreen() {
     { 
       rank: 2, 
       userId: 'user2', 
-      name: 'Mike Chen', 
+      name: 'Nageshwar Prasad', 
       points: 1100, 
       reports: 58, 
       level: 'Green Warrior', 
@@ -246,7 +250,7 @@ export default function CommunityScreen() {
     { 
       rank: 3, 
       userId: 'user3', 
-      name: 'Lisa Park', 
+      name: 'Leader', 
       points: 950, 
       reports: 45, 
       level: 'Sustainability Expert', 

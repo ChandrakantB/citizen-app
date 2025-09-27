@@ -37,6 +37,7 @@ export const AIAnalysisModal: React.FC<AIAnalysisModalProps> = ({
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(height));
   const [pulseAnim] = useState(new Animated.Value(1));
+  const [progressAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
     if (visible) {
@@ -86,6 +87,15 @@ export const AIAnalysisModal: React.FC<AIAnalysisModalProps> = ({
       ]).start();
     }
   }, [visible, isAnalyzing]);
+
+  // ✅ FIXED: Smooth progress bar animation
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: progress,
+      duration: 300, // Smooth 300ms animation
+      useNativeDriver: false,
+    }).start();
+  }, [progress]);
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency?.toLowerCase()) {
@@ -151,12 +161,19 @@ export const AIAnalysisModal: React.FC<AIAnalysisModalProps> = ({
                   AI is processing your image...
                 </Text>
 
+                {/* ✅ FIXED: Smooth animated progress bar */}
                 <View style={styles.progressContainer}>
                   <View style={styles.progressBar}>
                     <Animated.View 
                       style={[
                         styles.progressFill,
-                        { width: `${progress}%` }
+                        { 
+                          width: progressAnim.interpolate({
+                            inputRange: [0, 100],
+                            outputRange: ['0%', '100%'],
+                            extrapolate: 'clamp',
+                          })
+                        }
                       ]}
                     />
                   </View>
@@ -198,11 +215,17 @@ export const AIAnalysisModal: React.FC<AIAnalysisModalProps> = ({
                   </View>
                 </View>
 
-                <Text style={styles.waitTime}>This may take 10-20 seconds...</Text>
+                {/* ✅ FIXED: Dynamic wait time message */}
+                <Text style={styles.waitTime}>
+                  {progress < 30 ? "Analyzing image..." : 
+                   progress < 60 ? "Classifying waste type..." :
+                   progress < 90 ? "Calculating environmental impact..." :
+                   "Finalizing analysis..."}
+                </Text>
               </View>
             </LinearGradient>
           ) : analysis ? (
-            // ✅ AI Analysis Results UI
+            // ✅ AI Analysis Results UI (unchanged)
             <LinearGradient
               colors={['#4facfe', '#00f2fe']}
               style={styles.resultsContainer}
@@ -308,7 +331,7 @@ export const AIAnalysisModal: React.FC<AIAnalysisModalProps> = ({
               </View>
             </LinearGradient>
           ) : (
-            // ❌ Analysis Failed UI
+            // ❌ Analysis Failed UI (unchanged)
             <View style={styles.errorContainer}>
               <View style={styles.header}>
                 <Text style={[styles.headerTitle, { color: '#333' }]}>Report Submitted</Text>
@@ -348,6 +371,8 @@ export const AIAnalysisModal: React.FC<AIAnalysisModalProps> = ({
     </Modal>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   overlay: {

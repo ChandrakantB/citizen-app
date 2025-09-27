@@ -137,10 +137,10 @@ export default function NearbyFacilitiesMap({ visible, onClose }: { visible: boo
   ];
 
   const facilityTypes = [
-    { key: 'all', label: 'All Facilities', count: facilities.length },
-    { key: 'Recycling Center', label: 'Recycling', count: facilities.filter(f => f.type === 'Recycling Center').length },
+    { key: 'all', label: 'All', count: facilities.length },
+    { key: 'Recycling Center', label: 'Recycle', count: facilities.filter(f => f.type === 'Recycling Center').length },
     { key: 'Waste Collection Point', label: 'Collection', count: facilities.filter(f => f.type === 'Waste Collection Point').length },
-    { key: 'Composting Facility', label: 'Composting', count: facilities.filter(f => f.type === 'Composting Facility').length },
+    { key: 'Composting Facility', label: 'Compost', count: facilities.filter(f => f.type === 'Composting Facility').length },
     { key: 'E-Waste Center', label: 'E-Waste', count: facilities.filter(f => f.type === 'E-Waste Center').length },
   ];
 
@@ -180,29 +180,43 @@ export default function NearbyFacilitiesMap({ visible, onClose }: { visible: boo
   };
 
   const renderFilterTabs = () => (
-    <ScrollView 
-      horizontal 
-      showsHorizontalScrollIndicator={false}
-      style={styles.filterTabs}
-    >
-      {facilityTypes.map((filter) => (
-        <TouchableOpacity
-          key={filter.key}
-          style={[
-            styles.filterTab,
-            activeFilter === filter.key && styles.activeFilterTab
-          ]}
-          onPress={() => setActiveFilter(filter.key)}
-        >
-          <Text style={[
-            styles.filterTabText,
-            activeFilter === filter.key && styles.activeFilterTabText
-          ]}>
-            {filter.label} ({filter.count})
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+    <View style={styles.filterSection}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterTabs}
+        contentContainerStyle={styles.filterTabsContent}
+      >
+        {facilityTypes.map((filter) => (
+          <TouchableOpacity
+            key={filter.key}
+            style={[
+              styles.filterTab,
+              activeFilter === filter.key && styles.activeFilterTab
+            ]}
+            onPress={() => setActiveFilter(filter.key)}
+          >
+            <Text style={[
+              styles.filterTabText,
+              activeFilter === filter.key && styles.activeFilterTabText
+            ]}>
+              {filter.label}
+            </Text>
+            <View style={[
+              styles.filterTabBadge,
+              activeFilter === filter.key && styles.activeFilterTabBadge
+            ]}>
+              <Text style={[
+                styles.filterTabBadgeText,
+                activeFilter === filter.key && styles.activeFilterTabBadgeTextActive
+              ]}>
+                {filter.count}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
   );
 
   const renderMapView = () => (
@@ -210,32 +224,47 @@ export default function NearbyFacilitiesMap({ visible, onClose }: { visible: boo
       {/* Map Header */}
       <View style={styles.mapHeader}>
         <View style={styles.mapLocationInfo}>
-          <Ionicons name="location" size={20} color={theme.primary} />
-          <Text style={styles.mapLocationText}>Ranjhi, Jabalpur - Waste Management Facilities</Text>
+          <Ionicons name="location" size={16} color={theme.primary} />
+          <Text style={styles.mapLocationText}>Ranjhi, Jabalpur</Text>
         </View>
         <TouchableOpacity
           style={styles.openInMapsButton}
           onPress={() => handleGetDirections({ ...mapCenter, title: 'Ranjhi Area', address: 'Ranjhi, Jabalpur, MP' } as any)}
         >
-          <Ionicons name="open-outline" size={16} color={theme.primary} />
-          <Text style={styles.openInMapsText}>Open in Maps</Text>
+          <Ionicons name="open-outline" size={14} color={theme.primary} />
+          <Text style={styles.openInMapsText}>Open Maps</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Visual Map Representation */}
+      {/* Enhanced Visual Map */}
       <View style={styles.visualMap}>
-        <View style={styles.mapGrid}>
-          {/* Create a visual grid representing the map area */}
-          {Array.from({ length: 15 }).map((_, index) => (
-            <View key={index} style={styles.mapGridItem} />
-          ))}
+        <View style={styles.mapBackground}>
+          {/* Street lines for realistic look */}
+          <View style={styles.streetHorizontal1} />
+          <View style={styles.streetHorizontal2} />
+          <View style={styles.streetVertical1} />
+          <View style={styles.streetVertical2} />
+          
+          {/* Building blocks */}
+          <View style={styles.buildingBlock1} />
+          <View style={styles.buildingBlock2} />
+          <View style={styles.buildingBlock3} />
+          <View style={styles.buildingBlock4} />
         </View>
 
         {/* Facility markers positioned based on relative coordinates */}
         {filteredFacilities.map((facility, index) => {
-          // Calculate relative position (simplified for demo)
-          const relativeTop = 20 + (index * 40) + Math.sin(index) * 30;
-          const relativeLeft = 30 + (index * 50) + Math.cos(index) * 40;
+          // Better positioning algorithm
+          const positions = [
+            { top: '25%', left: '20%' },
+            { top: '35%', left: '65%' },
+            { top: '60%', left: '30%' },
+            { top: '70%', left: '75%' },
+            { top: '45%', left: '15%' },
+            { top: '80%', left: '55%' }
+          ];
+          
+          const position = positions[index] || { top: '50%', left: '50%' };
           
           return (
             <TouchableOpacity
@@ -243,14 +272,15 @@ export default function NearbyFacilitiesMap({ visible, onClose }: { visible: boo
               style={[
                 styles.mapMarker,
                 {
-                  top: `${Math.max(10, Math.min(80, relativeTop))}%`,
-                  left: `${Math.max(10, Math.min(80, relativeLeft))}%`,
+                  top: position.top,
+                  left: position.left,
                   backgroundColor: facility.color,
                 }
               ]}
               onPress={() => handleFacilityPress(facility)}
             >
-              <Ionicons name={facility.icon as any} size={16} color="#ffffff" />
+              <Ionicons name={facility.icon as any} size={14} color="#ffffff" />
+              <View style={styles.markerPulse} />
             </TouchableOpacity>
           );
         })}
@@ -258,63 +288,56 @@ export default function NearbyFacilitiesMap({ visible, onClose }: { visible: boo
         {/* Center marker for user location */}
         <View style={styles.userLocationMarker}>
           <View style={styles.userLocationDot}>
-            <Ionicons name="person" size={12} color="#ffffff" />
-          </View>
-        </View>
-      </View>
-
-      {/* Map Legend */}
-      <View style={styles.mapLegend}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendMarker, { backgroundColor: theme.primary }]}>
             <Ionicons name="person" size={10} color="#ffffff" />
           </View>
-          <Text style={styles.legendText}>Your Location</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendMarker, { backgroundColor: '#22c55e' }]} />
-          <Text style={styles.legendText}>Waste Facilities</Text>
+          <View style={styles.userLocationPulse} />
         </View>
       </View>
     </View>
   );
 
   const renderFacilitiesList = () => (
-    <ScrollView style={styles.facilitiesList}>
-      <Text style={styles.listTitle}>
-        {filteredFacilities.length} Facilities Found
-      </Text>
+    <ScrollView style={styles.facilitiesList} showsVerticalScrollIndicator={false}>
+      <View style={styles.listHeader}>
+        <Text style={styles.listTitle}>
+          {filteredFacilities.length} Facilities Found
+        </Text>
+      </View>
       
       {filteredFacilities.map((facility) => (
         <TouchableOpacity
           key={facility.id}
           style={styles.facilityCard}
           onPress={() => handleFacilityPress(facility)}
+          activeOpacity={0.7}
         >
           <View style={styles.facilityCardHeader}>
-            <View style={[styles.facilityIcon, { backgroundColor: facility.color + '20' }]}>
-              <Ionicons name={facility.icon as any} size={20} color={facility.color} />
+            <View style={[styles.facilityIcon, { backgroundColor: facility.color + '15' }]}>
+              <Ionicons name={facility.icon as any} size={18} color={facility.color} />
             </View>
             <View style={styles.facilityInfo}>
               <Text style={styles.facilityTitle}>{facility.title}</Text>
               <Text style={styles.facilityType}>{facility.type}</Text>
-              <Text style={styles.facilityDistance}>📍 {facility.distance} away</Text>
+              <View style={styles.facilityMeta}>
+                <Text style={styles.facilityDistance}>📍 {facility.distance}</Text>
+                <Text style={styles.facilityTimings}>🕒 {facility.timings.split(' ')[0]}</Text>
+              </View>
             </View>
-            <View style={[styles.facilityTypeBadge, { backgroundColor: facility.color + '20' }]}>
+            <View style={[styles.facilityTypeBadge, { backgroundColor: facility.color + '15' }]}>
               <Text style={[styles.facilityTypeText, { color: facility.color }]}>
                 {facility.type.split(' ')[0]}
               </Text>
             </View>
           </View>
           
-          <Text style={styles.facilityDescription}>{facility.description}</Text>
+          <Text style={styles.facilityDescription} numberOfLines={2}>{facility.description}</Text>
           
           <View style={styles.facilityActions}>
             <TouchableOpacity
               style={styles.facilityActionButton}
               onPress={() => handleGetDirections(facility)}
             >
-              <Ionicons name="navigate" size={16} color={theme.primary} />
+              <Ionicons name="navigate" size={14} color={theme.primary} />
               <Text style={styles.facilityActionText}>Directions</Text>
             </TouchableOpacity>
             
@@ -323,7 +346,7 @@ export default function NearbyFacilitiesMap({ visible, onClose }: { visible: boo
                 style={styles.facilityActionButton}
                 onPress={() => handleCall(facility.phone!)}
               >
-                <Ionicons name="call" size={16} color={theme.primary} />
+                <Ionicons name="call" size={14} color={theme.primary} />
                 <Text style={styles.facilityActionText}>Call</Text>
               </TouchableOpacity>
             )}
@@ -332,7 +355,7 @@ export default function NearbyFacilitiesMap({ visible, onClose }: { visible: boo
               style={styles.facilityActionButton}
               onPress={() => setSelectedFacility(facility)}
             >
-              <Ionicons name="information-circle" size={16} color={theme.primary} />
+              <Ionicons name="information-circle" size={14} color={theme.primary} />
               <Text style={styles.facilityActionText}>Details</Text>
             </TouchableOpacity>
           </View>
@@ -487,44 +510,77 @@ const createStyles = (theme: any) => StyleSheet.create({
   locationButton: {
     padding: 4,
   },
+  
+  // Improved Filter Section
+  filterSection: {
+    paddingVertical: 12,
+  },
   filterTabs: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+  },
+  filterTabsContent: {
+    paddingRight: 20,
   },
   filterTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: theme.surface,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
     borderWidth: 1,
     borderColor: theme.border,
+    gap: 6,
   },
   activeFilterTab: {
     backgroundColor: theme.primary,
     borderColor: theme.primary,
   },
   filterTabText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     color: theme.textSecondary,
   },
   activeFilterTabText: {
     color: '#ffffff',
   },
+  filterTabBadge: {
+    backgroundColor: theme.border,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 8,
+    minWidth: 16,
+    alignItems: 'center',
+  },
+  activeFilterTabBadge: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  filterTabBadgeText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  filterTabBadgeTextActive: {
+    color: '#ffffff',
+  },
+  
+  // Enhanced Map Container
   mapContainer: {
-    height: 200,
+    height: 160,
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 16,
     borderRadius: 12,
     backgroundColor: theme.surface,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   mapHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
+    padding: 8,
     borderBottomWidth: 1,
     borderBottomColor: theme.border,
   },
@@ -532,45 +588,111 @@ const createStyles = (theme: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   mapLocationText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     color: theme.text,
   },
   openInMapsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: theme.primary + '10',
   },
   openInMapsText: {
-    fontSize: 12,
+    fontSize: 10,
     color: theme.primary,
     fontWeight: '500',
   },
+  
+  // Realistic Map Design
   visualMap: {
     flex: 1,
     position: 'relative',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f0f4f8',
   },
-  mapGrid: {
+  mapBackground: {
     flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    position: 'relative',
   },
-  mapGridItem: {
-    width: '20%',
-    height: '20%',
-    borderWidth: 0.5,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f1f5f9',
+  streetHorizontal1: {
+    position: 'absolute',
+    top: '30%',
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: '#cbd5e0',
+  },
+  streetHorizontal2: {
+    position: 'absolute',
+    top: '70%',
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: '#cbd5e0',
+  },
+  streetVertical1: {
+    position: 'absolute',
+    left: '25%',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: '#cbd5e0',
+  },
+  streetVertical2: {
+    position: 'absolute',
+    left: '75%',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: '#cbd5e0',
+  },
+  buildingBlock1: {
+    position: 'absolute',
+    top: '10%',
+    left: '10%',
+    width: '12%',
+    height: '15%',
+    backgroundColor: '#e2e8f0',
+    borderRadius: 2,
+  },
+  buildingBlock2: {
+    position: 'absolute',
+    top: '35%',
+    left: '60%',
+    width: '12%',
+    height: '15%',
+    backgroundColor: '#e2e8f0',
+    borderRadius: 2,
+  },
+  buildingBlock3: {
+    position: 'absolute',
+    top: '75%',
+    left: '15%',
+    width: '12%',
+    height: '15%',
+    backgroundColor: '#e2e8f0',
+    borderRadius: 2,
+  },
+  buildingBlock4: {
+    position: 'absolute',
+    top: '45%',
+    left: '85%',
+    width: '12%',
+    height: '15%',
+    backgroundColor: '#e2e8f0',
+    borderRadius: 2,
   },
   mapMarker: {
     position: 'absolute',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -581,13 +703,21 @@ const createStyles = (theme: any) => StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  markerPulse: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    zIndex: -1,
+  },
   userLocationMarker: {
     position: 'absolute',
     top: '45%',
     left: '45%',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -595,70 +725,57 @@ const createStyles = (theme: any) => StyleSheet.create({
     borderColor: theme.primary,
   },
   userLocationDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: theme.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  mapLegend: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: theme.background,
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
-    gap: 16,
+  userLocationPulse: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: theme.primary + '20',
+    zIndex: -1,
   },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  legendMarker: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  legendText: {
-    fontSize: 10,
-    color: theme.textSecondary,
-  },
+  
+  // Improved Facilities List
   facilitiesList: {
     flex: 1,
     paddingHorizontal: 20,
   },
+  listHeader: {
+    marginBottom: 12,
+  },
   listTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: theme.text,
-    marginBottom: 16,
   },
   facilityCard: {
     backgroundColor: theme.card,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    padding: 14,
+    marginBottom: 12,
     shadowColor: theme.shadow,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: theme.border + '50',
   },
   facilityCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   facilityIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -667,57 +784,66 @@ const createStyles = (theme: any) => StyleSheet.create({
     flex: 1,
   },
   facilityTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: theme.text,
     marginBottom: 2,
   },
   facilityType: {
-    fontSize: 12,
+    fontSize: 11,
     color: theme.primary,
     fontWeight: '500',
-    marginBottom: 2,
+    marginBottom: 3,
+  },
+  facilityMeta: {
+    flexDirection: 'row',
+    gap: 12,
   },
   facilityDistance: {
-    fontSize: 12,
+    fontSize: 10,
+    color: theme.textSecondary,
+  },
+  facilityTimings: {
+    fontSize: 10,
     color: theme.textSecondary,
   },
   facilityTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   facilityTypeText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600',
   },
   facilityDescription: {
-    fontSize: 14,
+    fontSize: 12,
     color: theme.textSecondary,
-    lineHeight: 20,
-    marginBottom: 16,
+    lineHeight: 16,
+    marginBottom: 12,
   },
   facilityActions: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    gap: 12,
+    gap: 8,
   },
   facilityActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.primary + '20',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 4,
+    backgroundColor: theme.primary + '15',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 3,
     flex: 1,
     justifyContent: 'center',
   },
   facilityActionText: {
-    fontSize: 12,
+    fontSize: 10,
     color: theme.primary,
     fontWeight: '500',
   },
+  
+  // Keep existing detail modal styles unchanged
   facilityDetailContainer: {
     flex: 1,
   },
